@@ -3,7 +3,7 @@ using Mapps.Gamepads.Components;
 
 namespace Mapps.Gamepads.DualShock4
 {
-    public class DualShock4 : IGamepad
+    public class DualShock4 : IGamepad, IDisposable
     {
         public const int VendorId = 0x054C;
 
@@ -11,11 +11,18 @@ namespace Mapps.Gamepads.DualShock4
 
         private HidDevice _hidDevice;
 
+        private CancellationTokenSource? _cancellationTokenSource = null;
+
+        private bool _disposed;
+
         public DualShock4(HidDevice hidDevice)
         {
             _hidDevice = hidDevice;
-            new Thread(() => { ProcessReports(); }).Start();
         }
+
+        public bool Running { get; private set; }
+
+        public Battery Battery { get; } = new Battery();
 
         public Buttons<DS4Button> Buttons { get; } = new Buttons<DS4Button>();
 
@@ -27,26 +34,77 @@ namespace Mapps.Gamepads.DualShock4
 
         public Trigger RightTrigger { get; } = new Trigger();
 
-        private void ProcessReports()
+        public void StartTracking()
         {
-            while (true)
+            ThrowIfDisposed();
+            _cancellationTokenSource = new CancellationTokenSource();
+            new Thread(() => { ProcessHidReports(_cancellationTokenSource.Token); }).Start();
+            Running = true;
+        }
+
+        public void StopTracking()
+        {
+            ThrowIfDisposed();
+            _cancellationTokenSource?.Cancel();
+            _cancellationTokenSource?.Dispose();
+            _cancellationTokenSource = null;
+            Running = false;
+        }
+
+        private void ProcessHidReports(CancellationToken cancellationToken)
+        {
+            ThrowIfDisposed();
+
+            while (!cancellationToken.IsCancellationRequested)
             {
                 var rawReport = _hidDevice.ReadReport();
                 var payload = new HidReportPayload(rawReport.Data);
+
+                Battery.Percentage = payload.BatteryPercentage;
 
                 Buttons.HeldButtons = payload.HeldButtons;
 
                 LeftJoystick.X = payload.LeftJoystickX;
                 LeftJoystick.Y = payload.LeftJoystickY;
-
                 RightJoystick.X = payload.RightJoystickX;
                 RightJoystick.Y = payload.RightJoystickY;
 
                 LeftTrigger.Pressure = payload.LeftTriggerPressure;
-                LeftTrigger.Active = Buttons.IsPressed(DS4Button.L2);
-
                 RightTrigger.Pressure = payload.RightTriggerPressure;
-                RightTrigger.Active = Buttons.IsPressed(DS4Button.R2);
+            }
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    _cancellationTokenSource?.Cancel();
+                    _cancellationTokenSource?.Dispose();
+                    _cancellationTokenSource = null;
+
+                    Buttons.Dispose();
+                    LeftJoystick.Dispose();
+                    RightJoystick.Dispose();
+                    LeftTrigger.Dispose();
+                    RightTrigger.Dispose();
+                }
+                _disposed = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(DualShock4));
             }
         }
     }

@@ -1,20 +1,16 @@
 ﻿namespace Mapps.Gamepads.Components
 {
-    public class Buttons<T> : IGamepadComponent, IDisposable
+    public class Battery : IGamepadComponent, IDisposable
     {
         private bool _disposed;
 
-        public Buttons()
+        public Battery()
         {
         }
 
-        public IEnumerable<T> HeldButtons { get; internal set; } = new List<T>();
+        public double Percentage { get; internal set; }
 
-        public bool IsPressed(T button)
-        {
-            ThrowIfDisposed();
-            return HeldButtons.Contains(button);
-        }
+        public bool Charging { get; internal set; }
 
         protected virtual void Dispose(bool disposing)
         {
@@ -32,14 +28,6 @@
         {
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
-        }
-
-        private void ThrowIfDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(nameof(Buttons<T>));
-            }
         }
     }
 }

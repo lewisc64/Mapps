@@ -18,5 +18,7 @@
         Circle,
         Square,
         Cross,
+        PS,
+        TouchPad,
     }
 }

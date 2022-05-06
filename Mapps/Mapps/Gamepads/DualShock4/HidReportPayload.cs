@@ -2,6 +2,8 @@
 {
     public class HidReportPayload
     {
+        private const double MaxBatteryValue = 20;
+
         private static readonly Dictionary<DS4Button, byte> MiscButtonMap = new Dictionary<DS4Button, byte>
         {
             { DS4Button.L1, 1 },
@@ -35,9 +37,11 @@
             _raw = raw;
         }
 
+        private byte FaceButtonState => _raw[4 + _offset];
+
         private byte MiscButtonState => _raw[5 + _offset];
 
-        private byte FaceButtonState => _raw[4 + _offset];
+        private byte CounterByte => _raw[6 + _offset];
 
         public IEnumerable<DS4Button> HeldButtons
         {
@@ -80,6 +84,16 @@
                 {
                     yield return DS4Button.DpadLeft;
                 }
+
+                if ((CounterByte & 0x1) != 0)
+                {
+                    yield return DS4Button.PS;
+                }
+
+                if ((CounterByte & 0x2) != 0)
+                {
+                    yield return DS4Button.TouchPad;
+                }
             }
         }
 
@@ -94,5 +108,9 @@
         public byte LeftTriggerPressure => _raw[7 + _offset];
 
         public byte RightTriggerPressure => _raw[8 + _offset];
+
+        public byte BatteryLevel => _raw[11 + _offset];
+
+        public double BatteryPercentage => Math.Min(BatteryLevel * 100 / MaxBatteryValue, 100);
     }
 }
