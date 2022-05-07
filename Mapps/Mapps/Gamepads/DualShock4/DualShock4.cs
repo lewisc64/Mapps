@@ -1,5 +1,6 @@
-﻿using HidLibrary;
+﻿using HidSharp;
 using Mapps.Gamepads.Components;
+using Mapps.Trackers;
 using System.Diagnostics;
 
 namespace Mapps.Gamepads.DualShock4
@@ -10,7 +11,9 @@ namespace Mapps.Gamepads.DualShock4
 
         public static readonly int[] ProductIds = new[] { 0x05C4, 0x09CC };
 
-        private HidFastReadDevice? _hidDevice;
+        private HidDevice? _hidDevice;
+
+        private HidStream? _hidStream;
 
         private TimeSpan _outputReportInterval = TimeSpan.FromMilliseconds(0);
 
@@ -29,9 +32,11 @@ namespace Mapps.Gamepads.DualShock4
 
         public string DevicePath => _hidDevice?.DevicePath ?? throw new InvalidOperationException("Not connected to a device.");
 
-        public bool IsBluetooth => _hidDevice?.Capabilities.InputReportByteLength > 64;
+        public bool IsBluetooth => _hidDevice?.GetMaxInputReportLength() > 64;
 
         public bool IsConnected { get; private set; }
+
+        public NumberTracker MeasuredPollingRate { get; } = new NumberTracker(500);
 
         public Battery Battery { get; } = new Battery();
 
@@ -51,11 +56,20 @@ namespace Mapps.Gamepads.DualShock4
 
         public RumbleMotor RightLightMotor { get; } = new RumbleMotor();
 
+        public static IEnumerable<HidDevice> GetSupportedDevices()
+        {
+            return DeviceList.Local.GetHidDevices()
+                .Where(x => x.VendorID == VendorId && ProductIds.Contains(x.ProductID));
+        }
+
         public void Connect(string devicePath)
         {
             ThrowIfDisposed();
 
-            _hidDevice = (HidFastReadDevice)new HidFastReadEnumerator().GetDevice(devicePath);
+            _hidDevice = DeviceList.Local.GetHidDevices()
+                .First(x => x.DevicePath == devicePath);
+
+            _hidStream = _hidDevice.Open();
 
             _cancellationTokenSource = new CancellationTokenSource();
             new Thread(() => { ProcessHidReports(_cancellationTokenSource.Token); }).Start();
@@ -71,6 +85,10 @@ namespace Mapps.Gamepads.DualShock4
             _cancellationTokenSource?.Dispose();
             _cancellationTokenSource = null;
             IsConnected = false;
+
+            _hidDevice = null;
+            _hidStream?.Close();
+            _hidStream = null;
         }
 
         public void TestRumble()
@@ -98,17 +116,15 @@ namespace Mapps.Gamepads.DualShock4
 
             while (!cancellationToken.IsCancellationRequested && _hidDevice != null)
             {
-                if (!_hidDevice.IsConnected)
+                var report = GetNextReport();
+                if (report.Length == 0)
                 {
-                    Console.WriteLine("Device disconnected.");
-                    Disconnect();
-                    return;
+                    continue;
                 }
 
-                var report = GetNextReport();
                 UpdateStateFromPayload(new HidReportPayload(report, IsBluetooth));
 
-                Console.WriteLine(stopwatch.Elapsed.TotalMilliseconds);
+                MeasuredPollingRate.AddSample(stopwatch.Elapsed.TotalMilliseconds);
                 stopwatch.Restart();
             }
         }
@@ -152,16 +168,39 @@ namespace Mapps.Gamepads.DualShock4
 
         private byte[] GetNextReport()
         {
-            if (_hidDevice == null)
+            if (_hidStream == null || _hidDevice == null)
             {
                 return new byte[0];
             }
-            return _hidDevice.FastReadReport().Data;
+            try
+            {
+                var buffer = new byte[_hidDevice.GetMaxInputReportLength()];
+                if (_hidStream.Read(buffer) > 0)
+                {
+                    return buffer;
+                }
+            }
+            catch (IOException)
+            {
+                Disconnect();
+            }
+            catch (ObjectDisposedException)
+            {
+                // ignore
+            }
+            return new byte[0];
         }
 
         private void SendReport(byte[] data)
         {
-            _hidDevice?.WriteReport(new HidReport(data.Length, new HidDeviceData(data, HidDeviceData.ReadStatus.Success)));
+            try
+            {
+                _hidStream?.Write(data, 0, data.Length);
+            }
+            catch (Exception)
+            {
+                // ignore
+            }
         }
 
         private void UpdateStateFromPayload(HidReportPayload payload)
@@ -195,7 +234,9 @@ namespace Mapps.Gamepads.DualShock4
                     LeftTrigger.Dispose();
                     RightTrigger.Dispose();
 
-                    _hidDevice?.Dispose();
+                    _hidDevice = null;
+                    _hidStream?.Dispose();
+                    _hidStream = null;
 
                     StateChanged = null;
                 }

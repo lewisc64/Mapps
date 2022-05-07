@@ -26,14 +26,11 @@
 
         private byte[] _raw;
 
-        private int _offset = 0;
+        private int _offset;
 
         public HidReportPayload(byte[] raw, bool isBluetooth)
         {
-            if (raw[0] == 192 && raw[1] == 0 && isBluetooth)
-            {
-                _offset = 2;
-            }
+            _offset = isBluetooth ? 3 : 1;
             _raw = raw;
         }
 
