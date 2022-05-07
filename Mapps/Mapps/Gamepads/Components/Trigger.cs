@@ -10,6 +10,8 @@
         {
         }
 
+        public event EventHandler<float>? OnChange;
+
         public float Pressure
         {
             get
@@ -21,7 +23,18 @@
             internal set
             {
                 ThrowIfDisposed();
+
+                var previous = Pressure;
                 _pressure = value;
+                var now = Pressure;
+
+                if (previous != now)
+                {
+                    Task.Run(() =>
+                    {
+                        OnChange?.Invoke(this, now);
+                    });
+                }
             }
         }
 

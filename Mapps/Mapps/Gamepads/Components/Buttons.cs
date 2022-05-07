@@ -10,9 +10,9 @@
         {
         }
 
-        public event EventHandler<T>? ButtonDown;
+        public event EventHandler<T>? OnButtonDown;
 
-        public event EventHandler<T>? ButtonUp;
+        public event EventHandler<T>? OnButtonUp;
 
         public IEnumerable<T> HeldButtons
         {
@@ -30,7 +30,7 @@
                 {
                     Task.Run(() =>
                     {
-                        ButtonUp?.Invoke(this, button);
+                        OnButtonUp?.Invoke(this, button);
                     });
                 }
 
@@ -38,7 +38,7 @@
                 {
                     Task.Run(() =>
                     {
-                        ButtonDown?.Invoke(this, button);
+                        OnButtonDown?.Invoke(this, button);
                     });
                 }
 
