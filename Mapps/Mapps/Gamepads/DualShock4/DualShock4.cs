@@ -22,6 +22,9 @@ namespace Mapps.Gamepads.DualShock4
 
         public DualShock4()
         {
+            LightBar.Red = 0;
+            LightBar.Green = 255;
+            LightBar.Blue = 255;
         }
 
         public string DevicePath => _hidDevice?.DevicePath ?? throw new InvalidOperationException("Not connected to a device.");
@@ -125,10 +128,6 @@ namespace Mapps.Gamepads.DualShock4
 
                 report.LeftHeavyMotor = (byte)(LeftHeavyMotor.Intensity * 255);
                 report.RightLightMotor = (byte)(RightLightMotor.Intensity * 255);
-
-                LightBar.Red = 0;
-                LightBar.Green++;
-                LightBar.Blue = 0;
 
                 if (IsBluetooth)
                 {
