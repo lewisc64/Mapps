@@ -1,14 +1,25 @@
 ﻿namespace Mapps.Gamepads.Components
 {
-    public class Trigger : IGamepadComponent, IDisposable
+    public class Trigger : IGamepadComponent
     {
         private bool _disposed;
+
+        private float _pressure;
 
         public Trigger()
         {
         }
 
-        public byte Pressure { get; internal set; }
+        public float Pressure => _pressure < DeadZone ? 0 : _pressure;
+
+        public float DeadZone { get; set; } = 0.0f;
+
+        public void SetPressure(float pressure)
+        {
+            ThrowIfDisposed();
+
+            _pressure = pressure;
+        }
 
         protected virtual void Dispose(bool disposing)
         {
@@ -26,6 +37,14 @@
         {
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
+        }
+
+        private void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(nameof(Trigger));
+            }
         }
     }
 }

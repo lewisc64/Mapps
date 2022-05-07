@@ -8,7 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Crc32.NET" Version="1.2.0" />
     <PackageReference Include="hidlibrary" Version="3.3.40" />
+    <PackageReference Include="Nefarius.ViGEm.Client" Version="1.17.178" />
   </ItemGroup>
 
 </Project>

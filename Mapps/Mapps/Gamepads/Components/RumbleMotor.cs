@@ -1,16 +1,14 @@
 ﻿namespace Mapps.Gamepads.Components
 {
-    public class Battery : IGamepadComponent
+    public class RumbleMotor : IGamepadComponent
     {
         private bool _disposed;
 
-        public Battery()
+        public RumbleMotor()
         {
         }
 
-        public double Percentage { get; internal set; }
-
-        public bool IsCharging { get; internal set; }
+        public float Intensity { get; set; } = 0.0f;
 
         protected virtual void Dispose(bool disposing)
         {

@@ -1,16 +1,18 @@
 ﻿namespace Mapps.Gamepads.Components
 {
-    public class Battery : IGamepadComponent
+    public class MutableRGBLight : IGamepadComponent
     {
         private bool _disposed;
 
-        public Battery()
+        public MutableRGBLight()
         {
         }
 
-        public double Percentage { get; internal set; }
+        public byte Red { get; set; } = 255;
 
-        public bool IsCharging { get; internal set; }
+        public byte Green { get; set; } = 255;
+
+        public byte Blue { get; set; } = 255;
 
         protected virtual void Dispose(bool disposing)
         {

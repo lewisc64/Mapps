@@ -1,6 +1,6 @@
 ﻿namespace Mapps.Gamepads.Components
 {
-    public class Buttons<T> : IGamepadComponent, IDisposable
+    public class Buttons<T> : IGamepadComponent
     {
         private bool _disposed;
 

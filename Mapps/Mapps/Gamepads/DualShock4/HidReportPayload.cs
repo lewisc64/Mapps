@@ -1,6 +1,6 @@
 ﻿namespace Mapps.Gamepads.DualShock4
 {
-    public class HidReportPayload
+    internal class HidReportPayload
     {
         private const double MaxBatteryValue = 20;
 
@@ -28,9 +28,9 @@
 
         private int _offset = 0;
 
-        public HidReportPayload(byte[] raw)
+        public HidReportPayload(byte[] raw, bool isBluetooth)
         {
-            if (raw[0] == 192 && raw[1] == 0) // for bluetooth
+            if (raw[0] == 192 && raw[1] == 0 && isBluetooth)
             {
                 _offset = 2;
             }

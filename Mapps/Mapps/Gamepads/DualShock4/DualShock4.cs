@@ -1,26 +1,34 @@
 ﻿using HidLibrary;
 using Mapps.Gamepads.Components;
+using System.Diagnostics;
 
 namespace Mapps.Gamepads.DualShock4
 {
-    public class DualShock4 : IGamepad, IDisposable
+    public class DualShock4 : IGamepad
     {
         public const int VendorId = 0x054C;
 
-        public static readonly int[] DeviceIds = new[] { 0x05C4, 0x09CC };
+        public static readonly int[] ProductIds = new[] { 0x05C4, 0x09CC };
 
-        private HidDevice _hidDevice;
+        private HidFastReadDevice? _hidDevice;
+
+        private TimeSpan _outputReportInterval = TimeSpan.FromMilliseconds(0);
 
         private CancellationTokenSource? _cancellationTokenSource = null;
 
         private bool _disposed;
 
-        public DualShock4(HidDevice hidDevice)
+        public event EventHandler<EventArgs>? StateChanged;
+
+        public DualShock4()
         {
-            _hidDevice = hidDevice;
         }
 
-        public bool Running { get; private set; }
+        public string DevicePath => _hidDevice?.DevicePath ?? throw new InvalidOperationException("Not connected to a device.");
+
+        public bool IsBluetooth => _hidDevice?.Capabilities.InputReportByteLength > 64;
+
+        public bool IsConnected { get; private set; }
 
         public Battery Battery { get; } = new Battery();
 
@@ -34,44 +42,142 @@ namespace Mapps.Gamepads.DualShock4
 
         public Trigger RightTrigger { get; } = new Trigger();
 
-        public void StartTracking()
+        public MutableRGBLight LightBar { get; } = new MutableRGBLight();
+
+        public RumbleMotor LeftHeavyMotor { get; } = new RumbleMotor();
+
+        public RumbleMotor RightLightMotor { get; } = new RumbleMotor();
+
+        public void Connect(string devicePath)
         {
             ThrowIfDisposed();
+
+            _hidDevice = (HidFastReadDevice)new HidFastReadEnumerator().GetDevice(devicePath);
+
             _cancellationTokenSource = new CancellationTokenSource();
             new Thread(() => { ProcessHidReports(_cancellationTokenSource.Token); }).Start();
-            Running = true;
+            new Thread(() => { SendHidReports(_cancellationTokenSource.Token); }).Start();
+            IsConnected = true;
         }
 
-        public void StopTracking()
+        public void Disconnect()
         {
             ThrowIfDisposed();
+
             _cancellationTokenSource?.Cancel();
             _cancellationTokenSource?.Dispose();
             _cancellationTokenSource = null;
-            Running = false;
+            IsConnected = false;
+        }
+
+        public void TestRumble()
+        {
+            ThrowIfDisposed();
+
+            try
+            {
+                LeftHeavyMotor.Intensity = 1;
+                RightLightMotor.Intensity = 1;
+                Thread.Sleep(200);
+            }
+            finally
+            {
+                LeftHeavyMotor.Intensity = 0;
+                RightLightMotor.Intensity = 0;
+            }
         }
 
         private void ProcessHidReports(CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
 
-            while (!cancellationToken.IsCancellationRequested)
+            var stopwatch = Stopwatch.StartNew();
+
+            while (!cancellationToken.IsCancellationRequested && _hidDevice != null)
             {
-                var rawReport = _hidDevice.ReadReport();
-                var payload = new HidReportPayload(rawReport.Data);
+                if (!_hidDevice.IsConnected)
+                {
+                    Console.WriteLine("Device disconnected.");
+                    Disconnect();
+                    return;
+                }
 
-                Battery.Percentage = payload.BatteryPercentage;
+                var report = GetNextReport();
+                UpdateStateFromPayload(new HidReportPayload(report, IsBluetooth));
 
-                Buttons.HeldButtons = payload.HeldButtons;
-
-                LeftJoystick.X = payload.LeftJoystickX;
-                LeftJoystick.Y = payload.LeftJoystickY;
-                RightJoystick.X = payload.RightJoystickX;
-                RightJoystick.Y = payload.RightJoystickY;
-
-                LeftTrigger.Pressure = payload.LeftTriggerPressure;
-                RightTrigger.Pressure = payload.RightTriggerPressure;
+                Console.WriteLine(stopwatch.Elapsed.TotalMilliseconds);
+                stopwatch.Restart();
             }
+        }
+
+        private void SendHidReports(CancellationToken cancellationToken)
+        {
+            ThrowIfDisposed();
+
+            const int reportLength = 334;
+            var report = new HidOutputReport();
+
+            while (!cancellationToken.IsCancellationRequested && _hidDevice != null)
+            {
+                report.LightBarRed = LightBar.Red;
+                report.LightBarGreen = LightBar.Green;
+                report.LightBarBlue = LightBar.Blue;
+
+                report.LeftHeavyMotor = (byte)(LeftHeavyMotor.Intensity * 255);
+                report.RightLightMotor = (byte)(RightLightMotor.Intensity * 255);
+
+                LightBar.Red = 0;
+                LightBar.Green++;
+                LightBar.Blue = 0;
+
+                if (IsBluetooth)
+                {
+                    SendReport(report.AsBytesBluetooth(reportLength, _outputReportInterval.Milliseconds));
+                }
+                else
+                {
+                    SendReport(report.AsBytesUSB(reportLength));
+                }
+
+                if (_outputReportInterval.TotalMilliseconds > 0)
+                {
+                    Thread.Sleep(_outputReportInterval);
+                }
+            }
+        }
+
+        private float ConvertJoystickValue(byte value)
+        {
+            return value / 255f * 2 - 1;
+        }
+
+        private byte[] GetNextReport()
+        {
+            if (_hidDevice == null)
+            {
+                return new byte[0];
+            }
+            return _hidDevice.FastReadReport().Data;
+        }
+
+        private void SendReport(byte[] data)
+        {
+            _hidDevice?.WriteReport(new HidReport(data.Length, new HidDeviceData(data, HidDeviceData.ReadStatus.Success)));
+        }
+
+        private void UpdateStateFromPayload(HidReportPayload payload)
+        {
+            Battery.Percentage = payload.BatteryPercentage;
+
+            Buttons.HeldButtons = payload.HeldButtons;
+
+            LeftJoystick.SetPosition(ConvertJoystickValue(payload.LeftJoystickX), -ConvertJoystickValue(payload.LeftJoystickY));
+            RightJoystick.SetPosition(ConvertJoystickValue(payload.RightJoystickX), -ConvertJoystickValue(payload.RightJoystickY));
+
+            LeftTrigger.SetPressure(payload.LeftTriggerPressure / 255f);
+            RightTrigger.SetPressure(payload.RightTriggerPressure / 255f);
+
+            StateChanged?.Invoke(this, new EventArgs());
         }
 
         protected virtual void Dispose(bool disposing)
@@ -89,6 +195,10 @@ namespace Mapps.Gamepads.DualShock4
                     RightJoystick.Dispose();
                     LeftTrigger.Dispose();
                     RightTrigger.Dispose();
+
+                    _hidDevice?.Dispose();
+
+                    StateChanged = null;
                 }
                 _disposed = true;
             }
