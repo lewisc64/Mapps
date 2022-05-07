@@ -210,11 +210,13 @@ namespace Mapps.Gamepads.DualShock4
 
             Buttons.HeldButtons = payload.HeldButtons;
 
-            LeftJoystick.SetPosition(ConvertJoystickValue(payload.LeftJoystickX), -ConvertJoystickValue(payload.LeftJoystickY));
-            RightJoystick.SetPosition(ConvertJoystickValue(payload.RightJoystickX), -ConvertJoystickValue(payload.RightJoystickY));
+            LeftJoystick.X = ConvertJoystickValue(payload.LeftJoystickX);
+            LeftJoystick.Y = -ConvertJoystickValue(payload.LeftJoystickY);
+            RightJoystick.X = ConvertJoystickValue(payload.RightJoystickX);
+            RightJoystick.Y = -ConvertJoystickValue(payload.RightJoystickY);
 
-            LeftTrigger.SetPressure(payload.LeftTriggerPressure / 255f);
-            RightTrigger.SetPressure(payload.RightTriggerPressure / 255f);
+            LeftTrigger.Pressure = payload.LeftTriggerPressure / 255f;
+            RightTrigger.Pressure = payload.RightTriggerPressure / 255f;
 
             StateChanged?.Invoke(this, new EventArgs());
         }

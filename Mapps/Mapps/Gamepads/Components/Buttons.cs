@@ -4,11 +4,47 @@
     {
         private bool _disposed;
 
+        private IEnumerable<T> _heldButtons = new List<T>();
+
         public Buttons()
         {
         }
 
-        public IEnumerable<T> HeldButtons { get; internal set; } = new List<T>();
+        public event EventHandler<T>? ButtonDown;
+
+        public event EventHandler<T>? ButtonUp;
+
+        public IEnumerable<T> HeldButtons
+        {
+            get
+            {
+                ThrowIfDisposed();
+                return _heldButtons;
+            }
+
+            internal set
+            {
+                ThrowIfDisposed();
+
+                foreach (var button in _heldButtons.Except(value))
+                {
+                    Task.Run(() =>
+                    {
+                        ButtonUp?.Invoke(this, button);
+                    });
+                }
+
+                foreach (var button in value.Except(_heldButtons))
+                {
+                    Task.Run(() =>
+                    {
+                        ButtonDown?.Invoke(this, button);
+                    });
+                }
+
+                _heldButtons = value;
+            }
+        }
 
         public bool IsPressed(T button)
         {

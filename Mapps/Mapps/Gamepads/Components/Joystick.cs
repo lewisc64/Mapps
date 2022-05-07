@@ -12,19 +12,37 @@
         {
         }
 
-        public float X => ApplyDeadZone(_x);
+        public float X
+        {
+            get
+            {
+                ThrowIfDisposed();
+                return ApplyDeadZone(_x);
+            }
 
-        public float Y => ApplyDeadZone(_y);
+            internal set
+            {
+                ThrowIfDisposed();
+                _x = value;
+            }
+        }
+
+        public float Y
+        {
+            get
+            {
+                ThrowIfDisposed();
+                return ApplyDeadZone(_y);
+            }
+
+            internal set
+            {
+                ThrowIfDisposed();
+                _y = value;
+            }
+        }
 
         public float DeadZone { get; set; } = 0.1f;
-
-        public void SetPosition(float x, float y)
-        {
-            ThrowIfDisposed();
-
-            _x = x;
-            _y = y;
-        }
 
         private float ApplyDeadZone(float value)
         {

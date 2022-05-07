@@ -10,16 +10,22 @@
         {
         }
 
-        public float Pressure => _pressure < DeadZone ? 0 : _pressure;
+        public float Pressure
+        {
+            get
+            {
+                ThrowIfDisposed();
+                return _pressure < DeadZone ? 0 : _pressure;
+            }
+
+            internal set
+            {
+                ThrowIfDisposed();
+                _pressure = value;
+            }
+        }
 
         public float DeadZone { get; set; } = 0.0f;
-
-        public void SetPressure(float pressure)
-        {
-            ThrowIfDisposed();
-
-            _pressure = pressure;
-        }
 
         protected virtual void Dispose(bool disposing)
         {
