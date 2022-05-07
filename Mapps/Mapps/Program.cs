@@ -26,7 +26,7 @@ void ConsoleGamepadReadout(DualShock4 gamepad)
         {
             WriteLine("Connection: disconnected");
         }
-        WriteLine($"Battery level: {gamepad.Battery.Percentage}%");
+        WriteLine($"Battery level: {gamepad.Battery.Percentage}%" + (gamepad.Battery.IsCharging ? " (charging)" : string.Empty));
         WriteLine($"Average polling rate: {Math.Round(gamepad.MeasuredPollingRate.Average, 3)}ms");
         WriteLine("-");
         WriteLine($"Held buttons: {string.Join(", ", gamepad.Buttons.HeldButtons)}");

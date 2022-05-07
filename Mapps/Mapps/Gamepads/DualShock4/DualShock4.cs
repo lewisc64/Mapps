@@ -206,6 +206,7 @@ namespace Mapps.Gamepads.DualShock4
         private void UpdateStateFromPayload(HidReportPayload payload)
         {
             Battery.Percentage = payload.BatteryPercentage;
+            Battery.IsCharging = payload.Charging;
 
             Buttons.HeldButtons = payload.HeldButtons;
 

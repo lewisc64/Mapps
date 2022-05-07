@@ -2,8 +2,6 @@
 {
     internal class HidReportPayload
     {
-        private const double MaxBatteryValue = 20;
-
         private static readonly Dictionary<DS4Button, byte> MiscButtonMap = new Dictionary<DS4Button, byte>
         {
             { DS4Button.L1, 1 },
@@ -106,8 +104,10 @@
 
         public byte RightTriggerPressure => _raw[8 + _offset];
 
-        public byte BatteryLevel => _raw[11 + _offset];
+        public byte BatteryLevel => (byte)(_raw[29 + _offset] & 0x0F);
 
-        public double BatteryPercentage => Math.Min(BatteryLevel * 100 / MaxBatteryValue, 100);
+        public bool Charging => (_raw[29 + _offset] & 0x10) != 0;
+
+        public double BatteryPercentage => BatteryLevel * 100 / (Charging ? 11 : 8);
     }
 }

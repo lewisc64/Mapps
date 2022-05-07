@@ -12,7 +12,7 @@ namespace Mapps.Gamepads.DualShock4
 
         public bool EnableLightbar { get; set; } = true;
 
-        public bool EnableFlash { get; set; } = false;
+        public bool EnableFlash { get; set; } = true;
 
         public byte LeftHeavyMotor { get; set; } = 0;
 
@@ -76,7 +76,7 @@ namespace Mapps.Gamepads.DualShock4
             }
 
             array[1 + offset] = 0x04;
-            array[2 + offset] = 0; // ?
+            array[2 + offset] = 0;
             array[3 + offset] = RightLightMotor;
             array[4 + offset] = LeftHeavyMotor;
             array[5 + offset] = LightBarRed;
