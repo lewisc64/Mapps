@@ -17,14 +17,12 @@ namespace Mapps.OutputWrappers
 
         private IGamepad _gamepad;
 
-        private ButtonMapper<TButton, Xbox360Button> _buttonMapper;
-
         private EventHandler _stateChangedListener;
 
         public ToXbox360(IGamepad gamepad, ButtonMapper<TButton, Xbox360Button> buttonMapper)
         {
             _gamepad = gamepad;
-            _buttonMapper = buttonMapper;
+            ButtonMapper = buttonMapper;
             _client = new ViGEmClient();
 
             _stateChangedListener = (a, b) =>
@@ -38,9 +36,9 @@ namespace Mapps.OutputWrappers
 
                 if (gamepad is IHasButtons<TButton> buttons)
                 {
-                    foreach (var button in _buttonMapper.MappedButtons)
+                    foreach (var button in ButtonMapper.MappedButtons)
                     {
-                        _emulatedController.SetButtonState(_buttonMapper.Map(button), buttons.Buttons.IsPressed(button));
+                        _emulatedController.SetButtonState(ButtonMapper.Map(button), buttons.Buttons.IsPressed(button));
                     }
                 }
 
@@ -61,6 +59,8 @@ namespace Mapps.OutputWrappers
                 _emulatedController.SubmitReport();
             };
         }
+
+        public ButtonMapper<TButton, Xbox360Button> ButtonMapper { get; set; }
 
         public bool IsConnected { get; private set; }
 

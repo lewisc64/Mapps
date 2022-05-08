@@ -19,8 +19,6 @@ namespace Mapps.Gamepads.DualShock4
 
         private const int UsbInputReportLength = 64;
 
-        private readonly string _serialNumber;
-
         private HidDevice? _hidDevice;
 
         private HidStream? _hidStream;
@@ -39,8 +37,10 @@ namespace Mapps.Gamepads.DualShock4
 
         public DualShock4(string serialNumber)
         {
-            _serialNumber = serialNumber;
+            SerialNumber = serialNumber;
         }
+
+        public string SerialNumber { get; }
 
         public bool IsBluetooth => _hidDevice?.GetMaxInputReportLength() > UsbInputReportLength;
 
@@ -66,7 +66,7 @@ namespace Mapps.Gamepads.DualShock4
 
         public RumbleMotor LightMotor { get; } = new RumbleMotor();
 
-        public MutableRGBLight LightBar { get; } = new MutableRGBLight(0, 255, 0);
+        public MutableRGBLight LightBar { get; } = new MutableRGBLight(0, 255, 255);
 
         private static string GetSerialNumber(HidDevice device)
         {
@@ -161,6 +161,11 @@ namespace Mapps.Gamepads.DualShock4
                         ConnectDevice(desiredDevice.DevicePath);
                     }
 
+                    if (desiredDevice == null && IsConnected)
+                    {
+                        DisconnectDevice();
+                    }
+
                     if (_hidDevice != null && !IsConnected)
                     {
                         IsConnected = true;
@@ -215,7 +220,7 @@ namespace Mapps.Gamepads.DualShock4
         private IEnumerable<HidDevice> GetRelevantDevices()
         {
             return DeviceList.Local.GetHidDevices()
-                .Where(x => x.VendorID == VendorId && ProductIds.Contains(x.ProductID) && GetSerialNumber(x) == _serialNumber);
+                .Where(x => x.VendorID == VendorId && ProductIds.Contains(x.ProductID) && GetSerialNumber(x) == SerialNumber);
         }
 
         private void RecieveHidReports(CancellationToken cancellationToken)
