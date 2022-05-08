@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.1.32414.318
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mapps", "Mapps\Mapps.csproj", "{4489E004-DBD2-4EE8-AC47-DEAA9635C44B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mapps", "Mapps\Mapps.csproj", "{4489E004-DBD2-4EE8-AC47-DEAA9635C44B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SingleControllerManager", "SingleControllerManager\SingleControllerManager.csproj", "{D8053ECC-F000-4573-A76A-1DF29A9184C9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{4489E004-DBD2-4EE8-AC47-DEAA9635C44B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4489E004-DBD2-4EE8-AC47-DEAA9635C44B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4489E004-DBD2-4EE8-AC47-DEAA9635C44B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D8053ECC-F000-4573-A76A-1DF29A9184C9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D8053ECC-F000-4573-A76A-1DF29A9184C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D8053ECC-F000-4573-A76A-1DF29A9184C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D8053ECC-F000-4573-A76A-1DF29A9184C9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

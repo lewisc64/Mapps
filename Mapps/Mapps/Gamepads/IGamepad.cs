@@ -4,13 +4,21 @@ namespace Mapps.Gamepads
 {
     public interface IGamepad : IDisposable
     {
+        event EventHandler? OnConnect;
+
+        event EventHandler? OnDisconnect;
+
+        public event EventHandler? OnStateChanged;
+
+        bool IsTracking { get; }
+
         bool IsConnected { get; }
 
         NumberTracker MeasuredPollingRate { get; }
 
-        void Connect(string devicePath);
+        void StartTracking();
 
-        void Disconnect();
+        void StopTracking();
 
         void TestRumble();
     }

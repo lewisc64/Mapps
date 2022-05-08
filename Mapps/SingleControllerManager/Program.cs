@@ -1,5 +1,4 @@
-﻿using HidSharp;
-using Mapps.Gamepads.DualShock4;
+﻿using Mapps.Gamepads.DualShock4;
 using Mapps.OutputWrappers;
 
 void ConsoleGamepadReadout(DualShock4 gamepad)
@@ -38,36 +37,13 @@ void ConsoleGamepadReadout(DualShock4 gamepad)
     }
 }
 
-HidDevice? SelectDevice()
-{
-    var devices = DualShock4.GetSupportedDevices();
-    var wired = devices.FirstOrDefault(x => x.GetMaxInputReportLength() == 64);
-    var bluetooth = devices.FirstOrDefault(x => x.GetMaxInputReportLength() > 64);
-    return wired ?? bluetooth;
-}
-
-var connectedDevicePath = string.Empty;
-
-using (var gamepad = new DualShock4())
+using (var gamepad = new DualShock4(DualShock4.GetSerialNumbers().First()))
 using (var outputWrapper = new DualShock4ToXbox360(gamepad))
 {
     new Thread(() => ConsoleGamepadReadout(gamepad)).Start();
 
+    gamepad.StartTracking();
     outputWrapper.Connect();
 
-    while (true)
-    {
-        var desiredDevice = SelectDevice();
-        if (desiredDevice != null && (!gamepad.IsConnected || connectedDevicePath != desiredDevice.DevicePath))
-        {
-            if (gamepad.IsConnected)
-            {
-                gamepad.Disconnect();
-            }
-            gamepad.Connect(desiredDevice.DevicePath);
-            connectedDevicePath = desiredDevice.DevicePath;
-        }
-
-        Thread.Sleep(500);
-    }
+    Console.ReadKey();
 }

@@ -15,7 +15,7 @@ namespace Mapps.OutputWrappers
 
         private DualShock4 _gamepad;
 
-        EventHandler<EventArgs> _stateChangedListener;
+        EventHandler _stateChangedListener;
 
         public DualShock4ToXbox360(DualShock4 gamepad)
         {
@@ -76,7 +76,7 @@ namespace Mapps.OutputWrappers
                 _gamepad.RightLightMotor.Intensity = evnt.SmallMotor / 255f;
             };
 
-            _gamepad.StateChanged += _stateChangedListener;
+            _gamepad.OnStateChanged += _stateChangedListener;
 
             IsConnected = true;
         }
@@ -88,7 +88,7 @@ namespace Mapps.OutputWrappers
             _emulatedController?.Disconnect();
             _emulatedController = null;
 
-            _gamepad.StateChanged -= _stateChangedListener;
+            _gamepad.OnStateChanged -= _stateChangedListener;
 
             IsConnected = false;
         }

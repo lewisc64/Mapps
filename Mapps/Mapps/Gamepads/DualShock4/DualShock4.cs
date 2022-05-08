@@ -7,9 +7,11 @@ namespace Mapps.Gamepads.DualShock4
 {
     public class DualShock4 : IGamepad
     {
-        public const int VendorId = 0x054C;
+        private const int VendorId = 0x054C;
 
-        public static readonly int[] ProductIds = new[] { 0x05C4, 0x09CC };
+        private static readonly int[] ProductIds = new[] { 0x05C4, 0x09CC };
+
+        private readonly string _serialNumber;
 
         private HidDevice? _hidDevice;
 
@@ -19,12 +21,19 @@ namespace Mapps.Gamepads.DualShock4
 
         private CancellationTokenSource? _cancellationTokenSource = null;
 
+        private CancellationTokenSource? _hidCancellationTokenSource = null;
+
         private bool _disposed;
 
-        public event EventHandler<EventArgs>? StateChanged;
+        public event EventHandler? OnConnect;
 
-        public DualShock4()
+        public event EventHandler? OnDisconnect;
+
+        public event EventHandler? OnStateChanged;
+
+        public DualShock4(string serialNumber)
         {
+            _serialNumber = serialNumber;
             LightBar.Red = 0;
             LightBar.Green = 255;
             LightBar.Blue = 255;
@@ -33,6 +42,8 @@ namespace Mapps.Gamepads.DualShock4
         public string DevicePath => _hidDevice?.DevicePath ?? throw new InvalidOperationException("Not connected to a device.");
 
         public bool IsBluetooth => _hidDevice?.GetMaxInputReportLength() > 64;
+
+        public bool IsTracking { get; private set; }
 
         public bool IsConnected { get; private set; }
 
@@ -56,39 +67,63 @@ namespace Mapps.Gamepads.DualShock4
 
         public RumbleMotor RightLightMotor { get; } = new RumbleMotor();
 
-        public static IEnumerable<HidDevice> GetSupportedDevices()
+        private static string GetSerialNumber(HidDevice device)
         {
-            return DeviceList.Local.GetHidDevices()
-                .Where(x => x.VendorID == VendorId && ProductIds.Contains(x.ProductID));
+            if (device.GetMaxInputReportLength() == 64)
+            {
+                var buffer = new byte[64];
+                buffer[0] = 18;
+
+                using (var stream = device.Open())
+                {
+                    stream.GetFeature(buffer);
+                }
+
+                return Convert.ToHexString(buffer.Skip(1).Take(6).Reverse().ToArray()).ToLower();
+            }
+            else
+            {
+                // HidDevice.GetSerialNumber does not work for wired connections.
+                return device.GetSerialNumber().ToLower();
+            }
         }
 
-        public void Connect(string devicePath)
+        public static IEnumerable<string> GetSerialNumbers()
+        {
+            var serialNumbers = new List<string>();
+
+            var devices = DeviceList.Local.GetHidDevices()
+                .Where(x => x.VendorID == VendorId && ProductIds.Contains(x.ProductID));
+
+            foreach (var device in devices)
+            {
+                serialNumbers.Add(GetSerialNumber(device));
+            }
+
+            return serialNumbers.Distinct();
+        }
+
+        public void StartTracking()
         {
             ThrowIfDisposed();
 
-            _hidDevice = DeviceList.Local.GetHidDevices()
-                .First(x => x.DevicePath == devicePath);
-
-            _hidStream = _hidDevice.Open();
+            StopTracking();
 
             _cancellationTokenSource = new CancellationTokenSource();
-            new Thread(() => { ProcessHidReports(_cancellationTokenSource.Token); }).Start();
-            new Thread(() => { SendHidReports(_cancellationTokenSource.Token); }).Start();
-            IsConnected = true;
+            new Thread(() => { ManageDevices(_cancellationTokenSource.Token); }).Start();
+
+            IsTracking = true;
         }
 
-        public void Disconnect()
+        public void StopTracking()
         {
             ThrowIfDisposed();
 
             _cancellationTokenSource?.Cancel();
             _cancellationTokenSource?.Dispose();
             _cancellationTokenSource = null;
-            IsConnected = false;
 
-            _hidDevice = null;
-            _hidStream?.Close();
-            _hidStream = null;
+            IsTracking = false;
         }
 
         public void TestRumble()
@@ -106,6 +141,71 @@ namespace Mapps.Gamepads.DualShock4
                 LeftHeavyMotor.Intensity = 0;
                 RightLightMotor.Intensity = 0;
             }
+        }
+
+        private void ManageDevices(CancellationToken cancellationToken)
+        {
+            while (!cancellationToken.IsCancellationRequested)
+            {
+                // prefer wired connection
+                var desiredDevice = GetRelevantDevices().OrderBy(x => x.GetMaxInputReportLength()).FirstOrDefault();
+
+                if (desiredDevice != null && (_hidDevice == null || _hidDevice.DevicePath != desiredDevice.DevicePath))
+                {
+                    if (IsConnected)
+                    {
+                        DisconnectDevice();
+                    }
+                    ConnectDevice(desiredDevice.DevicePath);
+                }
+
+                if (_hidDevice != null && !IsConnected)
+                {
+                    IsConnected = true;
+                    OnConnect?.Invoke(this, EventArgs.Empty);
+                }
+
+                if (_hidDevice == null && IsConnected)
+                {
+                    IsConnected = false;
+                    OnDisconnect?.Invoke(this, EventArgs.Empty);
+                }
+
+                Thread.Sleep(500);
+            }
+        }
+
+        private void ConnectDevice(string devicePath)
+        {
+            ThrowIfDisposed();
+
+            _hidDevice = DeviceList.Local.GetHidDevices()
+                .First(x => x.DevicePath == devicePath);
+
+            _hidStream = _hidDevice.Open();
+
+            _hidCancellationTokenSource = new CancellationTokenSource();
+            new Thread(() => { ProcessHidReports(_hidCancellationTokenSource.Token); }).Start();
+            new Thread(() => { SendHidReports(_hidCancellationTokenSource.Token); }).Start();
+        }
+
+        private void DisconnectDevice()
+        {
+            ThrowIfDisposed();
+
+            _hidCancellationTokenSource?.Cancel();
+            _hidCancellationTokenSource?.Dispose();
+            _hidCancellationTokenSource = null;
+
+            _hidDevice = null;
+            _hidStream?.Close();
+            _hidStream = null;
+        }
+
+        private IEnumerable<HidDevice> GetRelevantDevices()
+        {
+            return DeviceList.Local.GetHidDevices()
+                .Where(x => x.VendorID == VendorId && ProductIds.Contains(x.ProductID) && GetSerialNumber(x) == _serialNumber);
         }
 
         private void ProcessHidReports(CancellationToken cancellationToken)
@@ -182,7 +282,7 @@ namespace Mapps.Gamepads.DualShock4
             }
             catch (IOException)
             {
-                Disconnect();
+                DisconnectDevice();
             }
             catch (ObjectDisposedException)
             {
@@ -218,7 +318,7 @@ namespace Mapps.Gamepads.DualShock4
             LeftTrigger.Pressure = payload.LeftTriggerPressure / 255f;
             RightTrigger.Pressure = payload.RightTriggerPressure / 255f;
 
-            StateChanged?.Invoke(this, new EventArgs());
+            OnStateChanged?.Invoke(this, new EventArgs());
         }
 
         protected virtual void Dispose(bool disposing)
@@ -231,6 +331,10 @@ namespace Mapps.Gamepads.DualShock4
                     _cancellationTokenSource?.Dispose();
                     _cancellationTokenSource = null;
 
+                    _hidCancellationTokenSource?.Cancel();
+                    _hidCancellationTokenSource?.Dispose();
+                    _hidCancellationTokenSource = null;
+
                     Buttons.Dispose();
                     LeftJoystick.Dispose();
                     RightJoystick.Dispose();
@@ -241,7 +345,7 @@ namespace Mapps.Gamepads.DualShock4
                     _hidStream?.Dispose();
                     _hidStream = null;
 
-                    StateChanged = null;
+                    OnStateChanged = null;
                 }
                 _disposed = true;
             }
