@@ -11,13 +11,19 @@ namespace Mapps.Gamepads.DualShock4
 
         private static readonly int[] ProductIds = new[] { 0x05C4, 0x09CC };
 
+        private static readonly TimeSpan DeviceCheckInterval = TimeSpan.FromMilliseconds(500);
+
+        private static readonly TimeSpan OutputReportInterval = TimeSpan.Zero;
+
+        private const int SerialNumberFeatureId = 18;
+
+        private const int UsbInputReportLength = 64;
+
         private readonly string _serialNumber;
 
         private HidDevice? _hidDevice;
 
         private HidStream? _hidStream;
-
-        private TimeSpan _outputReportInterval = TimeSpan.FromMilliseconds(0);
 
         private CancellationTokenSource? _cancellationTokenSource = null;
 
@@ -36,7 +42,7 @@ namespace Mapps.Gamepads.DualShock4
             _serialNumber = serialNumber;
         }
 
-        public bool IsBluetooth => _hidDevice?.GetMaxInputReportLength() > 64;
+        public bool IsBluetooth => _hidDevice?.GetMaxInputReportLength() > UsbInputReportLength;
 
         public bool IsTracking { get; private set; }
 
@@ -64,10 +70,10 @@ namespace Mapps.Gamepads.DualShock4
 
         private static string GetSerialNumber(HidDevice device)
         {
-            if (device.GetMaxInputReportLength() == 64)
+            if (device.GetMaxInputReportLength() == UsbInputReportLength)
             {
-                var buffer = new byte[64];
-                buffer[0] = 18;
+                var buffer = new byte[UsbInputReportLength];
+                buffer[0] = SerialNumberFeatureId;
 
                 using (var stream = device.Open())
                 {
@@ -78,7 +84,6 @@ namespace Mapps.Gamepads.DualShock4
             }
             else
             {
-                // HidDevice.GetSerialNumber does not work for wired connections.
                 return device.GetSerialNumber().ToLower();
             }
         }
@@ -121,7 +126,7 @@ namespace Mapps.Gamepads.DualShock4
             IsTracking = false;
         }
 
-        public void TestRumble()
+        public async Task TestRumble()
         {
             ThrowIfDisposed();
 
@@ -129,7 +134,7 @@ namespace Mapps.Gamepads.DualShock4
             {
                 HeavyMotor.Intensity = 1;
                 LightMotor.Intensity = 1;
-                Thread.Sleep(200);
+                await Task.Delay(200);
             }
             finally
             {
@@ -168,7 +173,7 @@ namespace Mapps.Gamepads.DualShock4
                         OnDisconnect?.Invoke(this, EventArgs.Empty);
                     }
 
-                    Thread.Sleep(500);
+                    Thread.Sleep(DeviceCheckInterval);
                 }
             }
             finally
@@ -190,7 +195,7 @@ namespace Mapps.Gamepads.DualShock4
             _hidStream = _hidDevice.Open();
 
             _hidCancellationTokenSource = new CancellationTokenSource();
-            new Thread(() => { ProcessHidReports(_hidCancellationTokenSource.Token); }).Start();
+            new Thread(() => { RecieveHidReports(_hidCancellationTokenSource.Token); }).Start();
             new Thread(() => { SendHidReports(_hidCancellationTokenSource.Token); }).Start();
         }
 
@@ -213,24 +218,35 @@ namespace Mapps.Gamepads.DualShock4
                 .Where(x => x.VendorID == VendorId && ProductIds.Contains(x.ProductID) && GetSerialNumber(x) == _serialNumber);
         }
 
-        private void ProcessHidReports(CancellationToken cancellationToken)
+        private void RecieveHidReports(CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
 
-            var stopwatch = Stopwatch.StartNew();
+            var pollingRateStopwatch = Stopwatch.StartNew();
 
-            while (!cancellationToken.IsCancellationRequested && _hidDevice != null)
+            try
             {
-                var report = GetNextReport();
-                if (report.Length == 0)
+                while (!cancellationToken.IsCancellationRequested && _hidDevice != null)
                 {
-                    continue;
+                    var report = GetNextReport();
+                    if (report.Length == 0)
+                    {
+                        continue;
+                    }
+
+                    UpdateStateFromReport(new HidInputReport(report, IsBluetooth));
+
+                    MeasuredPollingRate.AddSample(pollingRateStopwatch.Elapsed.TotalMilliseconds);
+                    pollingRateStopwatch.Restart();
                 }
-
-                UpdateStateFromPayload(new HidReportPayload(report, IsBluetooth));
-
-                MeasuredPollingRate.AddSample(stopwatch.Elapsed.TotalMilliseconds);
-                stopwatch.Restart();
+            }
+            catch (IOException)
+            {
+                DisconnectDevice();
+            }
+            catch (ObjectDisposedException)
+            {
+                // ignore
             }
         }
 
@@ -238,31 +254,41 @@ namespace Mapps.Gamepads.DualShock4
         {
             ThrowIfDisposed();
 
-            const int reportLength = 334;
             var report = new HidOutputReport();
 
-            while (!cancellationToken.IsCancellationRequested && _hidDevice != null)
+            try
             {
-                report.LightBarRed = LightBar.Red;
-                report.LightBarGreen = LightBar.Green;
-                report.LightBarBlue = LightBar.Blue;
-
-                report.LeftHeavyMotor = (byte)(HeavyMotor.Intensity * 255);
-                report.RightLightMotor = (byte)(LightMotor.Intensity * 255);
-
-                if (IsBluetooth)
+                while (!cancellationToken.IsCancellationRequested && _hidDevice != null)
                 {
-                    SendReport(report.AsBytesBluetooth(reportLength, _outputReportInterval.Milliseconds));
-                }
-                else
-                {
-                    SendReport(report.AsBytesUSB(reportLength));
-                }
+                    report.LightBarRed = LightBar.Red;
+                    report.LightBarGreen = LightBar.Green;
+                    report.LightBarBlue = LightBar.Blue;
 
-                if (_outputReportInterval.TotalMilliseconds > 0)
-                {
-                    Thread.Sleep(_outputReportInterval);
+                    report.LeftHeavyMotor = (byte)(HeavyMotor.Intensity * 255);
+                    report.RightLightMotor = (byte)(LightMotor.Intensity * 255);
+
+                    if (IsBluetooth)
+                    {
+                        SendReport(report.AsBytesBluetooth(OutputReportInterval.Milliseconds));
+                    }
+                    else
+                    {
+                        SendReport(report.AsBytesUSB());
+                    }
+
+                    if (OutputReportInterval.TotalMilliseconds > 0)
+                    {
+                        Thread.Sleep(OutputReportInterval);
+                    }
                 }
+            }
+            catch (IOException)
+            {
+                // ignore
+            }
+            catch (ObjectDisposedException)
+            {
+                // ignore
             }
         }
 
@@ -277,21 +303,10 @@ namespace Mapps.Gamepads.DualShock4
             {
                 return new byte[0];
             }
-            try
+            var buffer = new byte[_hidDevice.GetMaxInputReportLength()];
+            if (_hidStream.Read(buffer) > 0)
             {
-                var buffer = new byte[_hidDevice.GetMaxInputReportLength()];
-                if (_hidStream.Read(buffer) > 0)
-                {
-                    return buffer;
-                }
-            }
-            catch (IOException)
-            {
-                DisconnectDevice();
-            }
-            catch (ObjectDisposedException)
-            {
-                // ignore
+                return buffer;
             }
             return new byte[0];
         }
@@ -302,26 +317,28 @@ namespace Mapps.Gamepads.DualShock4
             {
                 _hidStream?.Write(data, 0, data.Length);
             }
-            catch (Exception)
+            catch (TimeoutException)
             {
                 // ignore
             }
         }
 
-        private void UpdateStateFromPayload(HidReportPayload payload)
+        private void UpdateStateFromReport(HidInputReport report)
         {
-            Battery.Percentage = payload.BatteryPercentage;
-            Battery.IsCharging = payload.Charging;
+            ThrowIfDisposed();
 
-            Buttons.HeldButtons = payload.HeldButtons;
+            Battery.Percentage = report.BatteryPercentage;
+            Battery.IsCharging = report.Charging;
 
-            LeftJoystick.X = ConvertJoystickValue(payload.LeftJoystickX);
-            LeftJoystick.Y = -ConvertJoystickValue(payload.LeftJoystickY);
-            RightJoystick.X = ConvertJoystickValue(payload.RightJoystickX);
-            RightJoystick.Y = -ConvertJoystickValue(payload.RightJoystickY);
+            Buttons.HeldButtons = report.HeldButtons;
 
-            LeftTrigger.Pressure = payload.LeftTriggerPressure / 255f;
-            RightTrigger.Pressure = payload.RightTriggerPressure / 255f;
+            LeftJoystick.X = ConvertJoystickValue(report.LeftJoystickX);
+            LeftJoystick.Y = -ConvertJoystickValue(report.LeftJoystickY);
+            RightJoystick.X = ConvertJoystickValue(report.RightJoystickX);
+            RightJoystick.Y = -ConvertJoystickValue(report.RightJoystickY);
+
+            LeftTrigger.Pressure = report.LeftTriggerPressure / 255f;
+            RightTrigger.Pressure = report.RightTriggerPressure / 255f;
 
             OnStateChanged?.Invoke(this, new EventArgs());
         }

@@ -21,7 +21,7 @@ namespace Mapps.Gamepads
 
         void StopTracking();
 
-        void TestRumble();
+        Task TestRumble();
     }
 
     public interface IHasButtons<T>

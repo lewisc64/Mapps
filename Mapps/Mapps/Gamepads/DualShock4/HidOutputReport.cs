@@ -4,6 +4,8 @@ namespace Mapps.Gamepads.DualShock4
 {
     internal class HidOutputReport
     {
+        private const int ReportLength = 334;
+
         public HidOutputReport()
         {
         }
@@ -28,9 +30,9 @@ namespace Mapps.Gamepads.DualShock4
 
         public byte FlashOffDuration { get; set; } = 0;
 
-        public byte[] AsBytesUSB(int length)
+        public byte[] AsBytesUSB()
         {
-            var bytes = new byte[length];
+            var bytes = new byte[ReportLength];
 
             bytes[0] = 0x05;
             WritePayload(bytes, 1);
@@ -38,9 +40,9 @@ namespace Mapps.Gamepads.DualShock4
             return bytes;
         }
 
-        public byte[] AsBytesBluetooth(int length, int pollRate)
+        public byte[] AsBytesBluetooth(int pollRate)
         {
-            var bytes = new byte[length];
+            var bytes = new byte[ReportLength];
 
             bytes[0] = 0x15;
             bytes[1] = (byte)(0xC0 | pollRate);

@@ -1,6 +1,6 @@
 ﻿namespace Mapps.Gamepads.DualShock4
 {
-    internal class HidReportPayload
+    internal class HidInputReport
     {
         private static readonly Dictionary<DS4Button, byte> MiscButtonMap = new Dictionary<DS4Button, byte>
         {
@@ -26,7 +26,7 @@
 
         private int _offset;
 
-        public HidReportPayload(byte[] raw, bool isBluetooth)
+        public HidInputReport(byte[] raw, bool isBluetooth)
         {
             _offset = isBluetooth ? 3 : 1;
             _raw = raw;

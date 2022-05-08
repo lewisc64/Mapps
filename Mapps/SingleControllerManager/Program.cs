@@ -5,25 +5,20 @@ void ConsoleGamepadReadout(DualShock4 gamepad)
 {
     void WriteLine(string message)
     {
-        var numSpaces = Console.BufferWidth - message.Length;
-        while (numSpaces < 0)
-        {
-            numSpaces += Console.BufferWidth;
-        }
-        Console.WriteLine(message + new string(' ', numSpaces));
+        Console.WriteLine(message + new string(' ', Console.BufferWidth - message.Length % Console.BufferWidth));
     }
 
-    Console.CursorVisible = false;
     while (true)
     {
+        Console.CursorVisible = false;
         Console.SetCursorPosition(0, 0);
         if (gamepad.IsConnected)
         {
-            WriteLine(gamepad.IsBluetooth ? "Connection: bluetooth" : "Connection: cable");
+            WriteLine(gamepad.IsBluetooth ? "Connection: Bluetooth" : "Connection: USB");
         }
         else
         {
-            WriteLine("Connection: disconnected");
+            WriteLine("Connection: Disconnected");
         }
         WriteLine($"Battery level: {gamepad.Battery.Percentage}%" + (gamepad.Battery.IsCharging ? " (charging)" : string.Empty));
         WriteLine($"Average polling rate: {Math.Round(gamepad.MeasuredPollingRate.Average, 3)}ms");
