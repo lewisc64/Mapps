@@ -1,16 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
 namespace Interface
 {
@@ -93,7 +84,7 @@ namespace Interface
             Red = (byte)sliderRed.Value;
             Green = (byte)sliderGreen.Value;
             Blue = (byte)sliderBlue.Value;
-            
+
             background.Background = new SolidColorBrush(Color.FromRgb(Red, Green, Blue));
 
             OnColorChanged?.Invoke(this, EventArgs.Empty);

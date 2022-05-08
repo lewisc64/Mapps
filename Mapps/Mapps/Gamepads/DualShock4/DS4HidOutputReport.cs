@@ -2,11 +2,11 @@
 
 namespace Mapps.Gamepads.DualShock4
 {
-    internal class HidOutputReport
+    internal class DS4HidOutputReport
     {
         private const int ReportLength = 334;
 
-        public HidOutputReport()
+        public DS4HidOutputReport()
         {
         }
 

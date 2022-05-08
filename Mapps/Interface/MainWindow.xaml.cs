@@ -77,6 +77,10 @@ namespace Interface
                     {
                         lightBar.Fill = new SolidColorBrush(Color.FromRgb(_gamepad.LightBar.Red, _gamepad.LightBar.Green, _gamepad.LightBar.Blue));
                     }
+                    catch (NullReferenceException)
+                    {
+                        // ignore
+                    }
                     catch (ObjectDisposedException)
                     {
                         // ignore

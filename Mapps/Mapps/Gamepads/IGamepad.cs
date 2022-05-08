@@ -1,5 +1,4 @@
 ﻿using Mapps.Gamepads.Components;
-using Mapps.Trackers;
 
 namespace Mapps.Gamepads
 {
@@ -14,8 +13,6 @@ namespace Mapps.Gamepads
         bool IsTracking { get; }
 
         bool IsConnected { get; }
-
-        NumberTracker MeasuredPollingRate { get; }
 
         void StartTracking();
 

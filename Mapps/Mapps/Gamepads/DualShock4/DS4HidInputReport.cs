@@ -1,6 +1,6 @@
 ﻿namespace Mapps.Gamepads.DualShock4
 {
-    internal class HidInputReport
+    internal class DS4HidInputReport
     {
         private static readonly Dictionary<DS4Button, byte> MiscButtonMap = new Dictionary<DS4Button, byte>
         {
@@ -22,11 +22,11 @@
             { DS4Button.Triangle, 128 },
         };
 
-        private byte[] _raw;
+        private readonly byte[] _raw;
 
-        private int _offset;
+        private readonly int _offset;
 
-        public HidInputReport(byte[] raw, bool isBluetooth)
+        public DS4HidInputReport(byte[] raw, bool isBluetooth)
         {
             _offset = isBluetooth ? 3 : 1;
             _raw = raw;
@@ -108,6 +108,6 @@
 
         public bool Charging => (_raw[29 + _offset] & 0x10) != 0;
 
-        public double BatteryPercentage => BatteryLevel * 100 / (Charging ? 11 : 8);
+        public int BatteryPercentage => BatteryLevel * 10;
     }
 }
