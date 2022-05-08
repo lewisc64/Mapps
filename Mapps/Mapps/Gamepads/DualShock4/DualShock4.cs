@@ -5,7 +5,7 @@ using System.Diagnostics;
 
 namespace Mapps.Gamepads.DualShock4
 {
-    public class DualShock4 : IGamepad
+    public class DualShock4 : IGamepad, IHasButtons<DS4Button>, IHasDualJoysticks, IHasDualTriggers, IHasTwoDistinctMassRumbleMotors, IHasBattery
     {
         private const int VendorId = 0x054C;
 
@@ -34,12 +34,7 @@ namespace Mapps.Gamepads.DualShock4
         public DualShock4(string serialNumber)
         {
             _serialNumber = serialNumber;
-            LightBar.Red = 0;
-            LightBar.Green = 255;
-            LightBar.Blue = 255;
         }
-
-        public string DevicePath => _hidDevice?.DevicePath ?? throw new InvalidOperationException("Not connected to a device.");
 
         public bool IsBluetooth => _hidDevice?.GetMaxInputReportLength() > 64;
 
@@ -61,11 +56,11 @@ namespace Mapps.Gamepads.DualShock4
 
         public Trigger RightTrigger { get; } = new Trigger();
 
-        public MutableRGBLight LightBar { get; } = new MutableRGBLight();
+        public RumbleMotor HeavyMotor { get; } = new RumbleMotor();
 
-        public RumbleMotor LeftHeavyMotor { get; } = new RumbleMotor();
+        public RumbleMotor LightMotor { get; } = new RumbleMotor();
 
-        public RumbleMotor RightLightMotor { get; } = new RumbleMotor();
+        public MutableRGBLight LightBar { get; } = new MutableRGBLight(0, 255, 0);
 
         private static string GetSerialNumber(HidDevice device)
         {
@@ -132,46 +127,56 @@ namespace Mapps.Gamepads.DualShock4
 
             try
             {
-                LeftHeavyMotor.Intensity = 1;
-                RightLightMotor.Intensity = 1;
+                HeavyMotor.Intensity = 1;
+                LightMotor.Intensity = 1;
                 Thread.Sleep(200);
             }
             finally
             {
-                LeftHeavyMotor.Intensity = 0;
-                RightLightMotor.Intensity = 0;
+                HeavyMotor.Intensity = 0;
+                LightMotor.Intensity = 0;
             }
         }
 
         private void ManageDevices(CancellationToken cancellationToken)
         {
-            while (!cancellationToken.IsCancellationRequested)
+            try
             {
-                // prefer wired connection
-                var desiredDevice = GetRelevantDevices().OrderBy(x => x.GetMaxInputReportLength()).FirstOrDefault();
-
-                if (desiredDevice != null && (_hidDevice == null || _hidDevice.DevicePath != desiredDevice.DevicePath))
+                while (!cancellationToken.IsCancellationRequested)
                 {
-                    if (IsConnected)
+                    // prefer wired connection
+                    var desiredDevice = GetRelevantDevices().OrderBy(x => x.GetMaxInputReportLength()).FirstOrDefault();
+
+                    if (desiredDevice != null && (_hidDevice == null || _hidDevice.DevicePath != desiredDevice.DevicePath))
                     {
-                        DisconnectDevice();
+                        if (IsConnected)
+                        {
+                            DisconnectDevice();
+                        }
+                        ConnectDevice(desiredDevice.DevicePath);
                     }
-                    ConnectDevice(desiredDevice.DevicePath);
-                }
 
-                if (_hidDevice != null && !IsConnected)
+                    if (_hidDevice != null && !IsConnected)
+                    {
+                        IsConnected = true;
+                        OnConnect?.Invoke(this, EventArgs.Empty);
+                    }
+
+                    if (_hidDevice == null && IsConnected)
+                    {
+                        IsConnected = false;
+                        OnDisconnect?.Invoke(this, EventArgs.Empty);
+                    }
+
+                    Thread.Sleep(500);
+                }
+            }
+            finally
+            {
+                if (!_disposed)
                 {
-                    IsConnected = true;
-                    OnConnect?.Invoke(this, EventArgs.Empty);
+                    DisconnectDevice();
                 }
-
-                if (_hidDevice == null && IsConnected)
-                {
-                    IsConnected = false;
-                    OnDisconnect?.Invoke(this, EventArgs.Empty);
-                }
-
-                Thread.Sleep(500);
             }
         }
 
@@ -242,8 +247,8 @@ namespace Mapps.Gamepads.DualShock4
                 report.LightBarGreen = LightBar.Green;
                 report.LightBarBlue = LightBar.Blue;
 
-                report.LeftHeavyMotor = (byte)(LeftHeavyMotor.Intensity * 255);
-                report.RightLightMotor = (byte)(RightLightMotor.Intensity * 255);
+                report.LeftHeavyMotor = (byte)(HeavyMotor.Intensity * 255);
+                report.RightLightMotor = (byte)(LightMotor.Intensity * 255);
 
                 if (IsBluetooth)
                 {

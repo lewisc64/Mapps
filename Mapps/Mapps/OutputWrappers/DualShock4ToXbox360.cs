@@ -72,8 +72,8 @@ namespace Mapps.OutputWrappers
 
             _emulatedController.FeedbackReceived += (_, evnt) =>
             {
-                _gamepad.LeftHeavyMotor.Intensity = evnt.LargeMotor / 255f;
-                _gamepad.RightLightMotor.Intensity = evnt.SmallMotor / 255f;
+                _gamepad.HeavyMotor.Intensity = evnt.LargeMotor / 255f;
+                _gamepad.LightMotor.Intensity = evnt.SmallMotor / 255f;
             };
 
             _gamepad.OnStateChanged += _stateChangedListener;
