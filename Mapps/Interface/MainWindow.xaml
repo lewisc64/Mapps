@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="MainWindow" Height="439" Width="697" Closing="Window_Closing" ResizeMode="CanMinimize">
+        Title="Mapps DualShock 4" Height="439" Width="697" Closing="Window_Closing" ResizeMode="CanMinimize">
     <Grid Background="#FF1F1F1F">
         <GroupBox Header="Controller Readout" Margin="0,10,10,10" Foreground="White" HorizontalAlignment="Right" Width="369">
             <Grid>
@@ -44,6 +44,7 @@
         <GroupBox Header="Actions" Margin="10,41,384,10" Foreground="White">
             <Grid>
                 <Button x:Name="buttonTestRumble" Content="Test Rumble" HorizontalAlignment="Center" Margin="0,10,0,0" VerticalAlignment="Top" Height="27" Width="271" Click="ButtonTestRumble_Click"/>
+                <Button x:Name="buttonSetColor" Content="Set Color" HorizontalAlignment="Center" Margin="0,42,0,0" VerticalAlignment="Top" Height="27" Width="271" Click="ButtonSetColor_Click"/>
             </Grid>
         </GroupBox>
     </Grid>

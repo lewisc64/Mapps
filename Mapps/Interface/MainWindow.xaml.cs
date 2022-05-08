@@ -208,5 +208,24 @@ namespace Interface
                 _gamepad?.TestRumble();
             });
         }
+
+        private void ButtonSetColor_Click(object sender, RoutedEventArgs e)
+        {
+            if (_gamepad == null)
+            {
+                return;
+            }
+
+            var dialog = new ColorPicker(_gamepad.LightBar.Red, _gamepad.LightBar.Green, _gamepad.LightBar.Blue);
+
+            dialog.OnColorChanged += (a, b) =>
+            {
+                _gamepad.LightBar.Red = dialog.Red;
+                _gamepad.LightBar.Green = dialog.Green;
+                _gamepad.LightBar.Blue = dialog.Blue;
+            };
+
+            dialog.ShowDialog();
+        }
     }
 }
