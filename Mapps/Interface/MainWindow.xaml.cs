@@ -71,6 +71,17 @@ namespace Interface
             _gamepad.OnStateChanged += (a, b) =>
             {
                 Dispatcher.Invoke(UpdateControllerInformation);
+                Dispatcher.Invoke(() =>
+                {
+                    try
+                    {
+                        lightBar.Fill = new SolidColorBrush(Color.FromRgb(_gamepad.LightBar.Red, _gamepad.LightBar.Green, _gamepad.LightBar.Blue));
+                    }
+                    catch (ObjectDisposedException)
+                    {
+                        // ignore
+                    }
+                });
             };
 
             _gamepad.Buttons.OnButtonDown += (_, button) =>
