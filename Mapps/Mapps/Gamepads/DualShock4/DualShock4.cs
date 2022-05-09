@@ -19,6 +19,13 @@ namespace Mapps.Gamepads.DualShock4
         public DualShock4(string serialNumber)
         {
             SerialNumber = serialNumber;
+
+            OnConnect += (a, b) =>
+            {
+                _outputReport.UpdateRumble = true;
+                _outputReport.UpdateLightBar = true;
+                _outputReport.UpdateFlash = true;
+            };
         }
 
         public string SerialNumber { get; }
