@@ -57,8 +57,6 @@ namespace Mapps.Gamepads
             IsTracking = false;
         }
 
-        public abstract Task TestRumble();
-
         protected abstract IEnumerable<HidDevice> GetRelevantDevicesByPriority();
 
         protected abstract void ProcessInputReport(byte[] report);

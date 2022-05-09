@@ -17,8 +17,6 @@ namespace Mapps.Gamepads
         void StartTracking();
 
         void StopTracking();
-
-        Task TestRumble();
     }
 
     public interface IHasButtons<T>
@@ -45,6 +43,8 @@ namespace Mapps.Gamepads
         RumbleMotor HeavyMotor { get; }
 
         RumbleMotor LightMotor { get; }
+
+        Task TestRumble();
     }
 
     public interface IHasBattery

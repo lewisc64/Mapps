@@ -49,7 +49,7 @@ namespace Mapps.Gamepads.DualShock4
 
         public MutableRGBLight LightBar { get; } = new MutableRGBLight(0, 255, 255);
 
-        public override async Task TestRumble()
+        public async Task TestRumble()
         {
             ThrowIfDisposed();
 
