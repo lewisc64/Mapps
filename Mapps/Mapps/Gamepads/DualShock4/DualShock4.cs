@@ -9,7 +9,6 @@ namespace Mapps.Gamepads.DualShock4
 
         private static readonly int[] ProductIds = new[] { 0x05C4, 0x09CC };
 
-
         private const int SerialNumberFeatureId = 18;
 
         private const int UsbInputReportLength = 64;
