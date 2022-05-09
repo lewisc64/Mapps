@@ -14,6 +14,8 @@ namespace Mapps.Gamepads.DualShock4
 
         private const int UsbInputReportLength = 64;
 
+        private readonly DS4HidOutputReport _outputReport = new DS4HidOutputReport();
+
         public DualShock4(string serialNumber)
         {
             SerialNumber = serialNumber;
@@ -49,7 +51,7 @@ namespace Mapps.Gamepads.DualShock4
             {
                 HeavyMotor.Intensity = 1;
                 LightMotor.Intensity = 1;
-                await Task.Delay(200);
+                await Task.Delay(500);
             }
             finally
             {
@@ -87,21 +89,31 @@ namespace Mapps.Gamepads.DualShock4
 
         protected override byte[] GenerateOutputReport()
         {
-            var report = new DS4HidOutputReport();
+            var heavyRumble = (byte)(HeavyMotor.Intensity * 255);
+            var lightRumble = (byte)(LightMotor.Intensity * 255);
 
-            report.LightBarRed = LightBar.Red;
-            report.LightBarGreen = LightBar.Green;
-            report.LightBarBlue = LightBar.Blue;
+            if (_outputReport.LeftHeavyMotor != heavyRumble || _outputReport.RightLightMotor != lightRumble)
+            {
+                _outputReport.LeftHeavyMotor = heavyRumble;
+                _outputReport.RightLightMotor = lightRumble;
+                _outputReport.UpdateRumble = true;
+            }
 
-            report.LeftHeavyMotor = (byte)(HeavyMotor.Intensity * 255);
-            report.RightLightMotor = (byte)(LightMotor.Intensity * 255);
+            if (_outputReport.LightBarRed != LightBar.Red || _outputReport.LightBarGreen != LightBar.Green || _outputReport.LightBarBlue != LightBar.Blue)
+            {
+                _outputReport.LightBarRed = LightBar.Red;
+                _outputReport.LightBarGreen = LightBar.Green;
+                _outputReport.LightBarBlue = LightBar.Blue;
+                _outputReport.UpdateLightBar = true;
+            }
 
-            return IsBluetooth ? report.AsBytesBluetooth(OutputReportInterval.Milliseconds) : report.AsBytesUSB();
-        }
+            var bytes = IsBluetooth ? _outputReport.AsBytesBluetooth(OutputReportInterval.Milliseconds) : _outputReport.AsBytesUSB();
 
-        private float ConvertJoystickValue(byte value)
-        {
-            return value / 255f * 2 - 1;
+            _outputReport.UpdateRumble = false;
+            _outputReport.UpdateLightBar = false;
+            _outputReport.UpdateFlash = false;
+
+            return bytes;
         }
 
         protected override void DisposeComponents()
@@ -111,6 +123,11 @@ namespace Mapps.Gamepads.DualShock4
             RightJoystick.Dispose();
             LeftTrigger.Dispose();
             RightTrigger.Dispose();
+        }
+
+        private static float ConvertJoystickValue(byte value)
+        {
+            return value / 255f * 2 - 1;
         }
 
         private static string? GetSerialNumber(HidDevice device)

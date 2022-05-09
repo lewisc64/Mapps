@@ -1,4 +1,5 @@
 ﻿using Mapps.Gamepads;
+using Mapps.Gamepads.XInput;
 using Mapps.Mappers;
 using Nefarius.ViGEm.Client;
 using Nefarius.ViGEm.Client.Targets;
@@ -9,17 +10,36 @@ namespace Mapps.OutputWrappers
     public class ToXbox360<TButton> : IGamepadOutputWrapper, IDisposable
         where TButton : notnull
     {
+        private readonly Dictionary<XboxButton, Xbox360Button> ViGEmButtonMap = new()
+        {
+            { XboxButton.A, Xbox360Button.A },
+            { XboxButton.B, Xbox360Button.B },
+            { XboxButton.X, Xbox360Button.X },
+            { XboxButton.Y, Xbox360Button.Y },
+            { XboxButton.DpadUp, Xbox360Button.Up },
+            { XboxButton.DpadDown, Xbox360Button.Down },
+            { XboxButton.DpadLeft, Xbox360Button.Left },
+            { XboxButton.DpadRight, Xbox360Button.Right },
+            { XboxButton.RightShoulder, Xbox360Button.RightShoulder },
+            { XboxButton.LeftShoulder, Xbox360Button.LeftShoulder },
+            { XboxButton.LeftStick, Xbox360Button.LeftThumb },
+            { XboxButton.RightStick, Xbox360Button.RightThumb },
+            { XboxButton.Back, Xbox360Button.Back },
+            { XboxButton.Start, Xbox360Button.Start },
+            { XboxButton.Guide, Xbox360Button.Guide },
+        };
+
         private bool _disposed;
 
         private readonly ViGEmClient _client;
 
         private IXbox360Controller? _emulatedController;
 
-        private IGamepad _gamepad;
+        private readonly IGamepad _gamepad;
 
-        private EventHandler _stateChangedListener;
+        private readonly EventHandler _stateChangedListener;
 
-        public ToXbox360(IGamepad gamepad, ButtonMapper<TButton, Xbox360Button> buttonMapper)
+        public ToXbox360(IGamepad gamepad, ButtonMapper<TButton, XboxButton> buttonMapper)
         {
             _gamepad = gamepad;
             ButtonMapper = buttonMapper;
@@ -38,7 +58,7 @@ namespace Mapps.OutputWrappers
                 {
                     foreach (var button in ButtonMapper.MappedButtons)
                     {
-                        _emulatedController.SetButtonState(ButtonMapper.Map(button), buttons.Buttons.IsPressed(button));
+                        _emulatedController.SetButtonState(ViGEmButtonMap[ButtonMapper.Map(button)], buttons.Buttons.IsPressed(button));
                     }
                 }
 
@@ -60,7 +80,7 @@ namespace Mapps.OutputWrappers
             };
         }
 
-        public ButtonMapper<TButton, Xbox360Button> ButtonMapper { get; set; }
+        public ButtonMapper<TButton, XboxButton> ButtonMapper { get; set; }
 
         public bool IsConnected { get; private set; }
 

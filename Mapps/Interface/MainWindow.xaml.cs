@@ -64,7 +64,7 @@ namespace Interface
             }
 
             _gamepad = new DualShock4((string)comboSerialNumbers.SelectedItem);
-            _outputWrapper = new ToXbox360<DS4Button>(_gamepad, DefaultMappers.DualShock4ToXbox360ButtonMapper);
+            _outputWrapper = new ToXbox360<DS4Button>(_gamepad, DefaultMappers.DualShock4ToXboxButtonMapper);
 
             labelSmallInfo.Content = $"Serial number: {_gamepad.SerialNumber}";
 

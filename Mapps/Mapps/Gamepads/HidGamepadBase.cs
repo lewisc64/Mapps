@@ -122,7 +122,10 @@ namespace Mapps.Gamepads
 
             _hidCancellationTokenSource = new CancellationTokenSource();
             new Thread(() => { RecieveHidReports(_hidCancellationTokenSource.Token); }).Start();
-            new Thread(() => { SendHidReports(_hidCancellationTokenSource.Token); }).Start();
+            if (_hidDevice.GetMaxOutputReportLength() > 0)
+            {
+                new Thread(() => { SendHidReports(_hidCancellationTokenSource.Token); }).Start();
+            }
         }
 
         private void DisconnectDevice()
@@ -179,7 +182,11 @@ namespace Mapps.Gamepads
             {
                 while (!cancellationToken.IsCancellationRequested && _hidDevice != null)
                 {
-                    SendReport(GenerateOutputReport());
+                    var report = GenerateOutputReport();
+                    if (report.Length > 0)
+                    {
+                        SendReport(report);
+                    }
                     if (OutputReportInterval.TotalMilliseconds > 0)
                     {
                         Thread.Sleep(OutputReportInterval);
@@ -203,9 +210,16 @@ namespace Mapps.Gamepads
                 return new byte[0];
             }
             var buffer = new byte[_hidDevice.GetMaxInputReportLength()];
-            if (_hidStream.Read(buffer) > 0)
+            try
             {
-                return buffer;
+                if (_hidStream.Read(buffer) > 0)
+                {
+                    return buffer;
+                }
+            }
+            catch (TimeoutException)
+            {
+                // ignore, try again next loop.
             }
             return new byte[0];
         }

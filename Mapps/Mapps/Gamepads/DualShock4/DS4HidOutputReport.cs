@@ -10,11 +10,11 @@ namespace Mapps.Gamepads.DualShock4
         {
         }
 
-        public bool EnableRumble { get; set; } = true;
+        public bool UpdateRumble { get; set; } = true;
 
-        public bool EnableLightbar { get; set; } = true;
+        public bool UpdateLightBar { get; set; } = true;
 
-        public bool EnableFlash { get; set; } = true;
+        public bool UpdateFlash { get; set; } = true;
 
         public byte LeftHeavyMotor { get; set; } = 0;
 
@@ -64,15 +64,15 @@ namespace Mapps.Gamepads.DualShock4
         {
             array[0 + offset] = 0xF0;
 
-            if (EnableRumble)
+            if (UpdateRumble)
             {
                 array[0 + offset] += 1;
             }
-            if (EnableLightbar)
+            if (UpdateLightBar)
             {
                 array[0 + offset] += 2;
             }
-            if (EnableFlash)
+            if (UpdateFlash)
             {
                 array[0 + offset] += 4;
             }
