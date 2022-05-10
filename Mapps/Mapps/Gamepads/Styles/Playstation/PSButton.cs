@@ -1,6 +1,6 @@
-﻿namespace Mapps.Gamepads.DualShock4
+﻿namespace Mapps.Gamepads.Styles.PlayStation
 {
-    public enum DS4Button
+    public enum PSButton
     {
         R1,
         R2,

@@ -1,4 +1,5 @@
-﻿using Mapps.Gamepads.DualShock4;
+﻿using Mapps.Gamepads.Styles.PlayStation;
+using Mapps.Gamepads.Styles.PlayStation.DualShock4;
 using Mapps.Mappers;
 using Mapps.OutputWrappers;
 using System;
@@ -19,7 +20,7 @@ namespace Interface
     {
         private DualShock4? _gamepad = null;
 
-        private ToXbox360<DS4Button>? _outputWrapper = null;
+        private ToXbox360<PSButton>? _outputWrapper = null;
 
         public MainWindow()
         {
@@ -64,7 +65,7 @@ namespace Interface
             }
 
             _gamepad = new DualShock4((string)comboSerialNumbers.SelectedItem);
-            _outputWrapper = new ToXbox360<DS4Button>(_gamepad, DefaultMappers.DualShock4ToXboxButtonMapper);
+            _outputWrapper = new ToXbox360<PSButton>(_gamepad, DefaultMappers.DualShock4ToXboxButtonMapper);
 
             labelSmallInfo.Content = $"Serial number: {_gamepad.SerialNumber}";
 
@@ -139,26 +140,26 @@ namespace Interface
             label.Background = new SolidColorBrush(Color.FromRgb((byte)(rMin + (rMax - rMin) * pressure), 0, 0));
         }
 
-        private Control? GetControlForButton(DS4Button button)
+        private Control? GetControlForButton(PSButton button)
         {
-            var map = new Dictionary<DS4Button, Control>
+            var map = new Dictionary<PSButton, Control>
             {
-                { DS4Button.L1, labelL1 },
-                { DS4Button.R1, labelR1 },
-                { DS4Button.L3, labelL3 },
-                { DS4Button.R3, labelR3 },
-                { DS4Button.Cross, labelCross },
-                { DS4Button.Circle, labelCircle },
-                { DS4Button.Square, labelSquare },
-                { DS4Button.Triangle, labelTriangle },
-                { DS4Button.DpadUp, labelUp },
-                { DS4Button.DpadDown, labelDown },
-                { DS4Button.DpadLeft, labelLeft },
-                { DS4Button.DpadRight, labelRight },
-                { DS4Button.Share, labelShare },
-                { DS4Button.Options, labelOptions },
-                { DS4Button.PS, labelPS },
-                { DS4Button.TouchPad, labelTouchPad }
+                { PSButton.L1, labelL1 },
+                { PSButton.R1, labelR1 },
+                { PSButton.L3, labelL3 },
+                { PSButton.R3, labelR3 },
+                { PSButton.Cross, labelCross },
+                { PSButton.Circle, labelCircle },
+                { PSButton.Square, labelSquare },
+                { PSButton.Triangle, labelTriangle },
+                { PSButton.DpadUp, labelUp },
+                { PSButton.DpadDown, labelDown },
+                { PSButton.DpadLeft, labelLeft },
+                { PSButton.DpadRight, labelRight },
+                { PSButton.Share, labelShare },
+                { PSButton.Options, labelOptions },
+                { PSButton.PS, labelPS },
+                { PSButton.TouchPad, labelTouchPad }
             };
 
             if (map.ContainsKey(button))

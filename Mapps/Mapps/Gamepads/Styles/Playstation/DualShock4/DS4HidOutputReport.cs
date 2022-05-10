@@ -1,6 +1,6 @@
 ﻿using Force.Crc32;
 
-namespace Mapps.Gamepads.DualShock4
+namespace Mapps.Gamepads.Styles.PlayStation.DualShock4
 {
     internal class DS4HidOutputReport
     {

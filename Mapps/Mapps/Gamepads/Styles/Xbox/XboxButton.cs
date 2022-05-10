@@ -1,4 +1,4 @@
-﻿namespace Mapps.Gamepads.XInput
+﻿namespace Mapps.Gamepads.Styles.Xbox
 {
     public enum XboxButton
     {

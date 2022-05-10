@@ -1,35 +1,35 @@
-﻿using Mapps.Gamepads.DualShock4;
-using Mapps.Gamepads.XInput;
+﻿using Mapps.Gamepads.Styles.PlayStation;
+using Mapps.Gamepads.Styles.Xbox;
 
 namespace Mapps.Mappers
 {
     public static class DefaultMappers
     {
-        public static ButtonMapper<DS4Button, XboxButton> DualShock4ToXboxButtonMapper
+        public static ButtonMapper<PSButton, XboxButton> DualShock4ToXboxButtonMapper
         {
             get
             {
-                var mapper = new ButtonMapper<DS4Button, XboxButton>();
+                var mapper = new ButtonMapper<PSButton, XboxButton>();
 
-                mapper.SetMapping(DS4Button.DpadUp, XboxButton.DpadUp);
-                mapper.SetMapping(DS4Button.DpadDown, XboxButton.DpadDown);
-                mapper.SetMapping(DS4Button.DpadLeft, XboxButton.DpadLeft);
-                mapper.SetMapping(DS4Button.DpadRight, XboxButton.DpadRight);
+                mapper.SetMapping(PSButton.DpadUp, XboxButton.DpadUp);
+                mapper.SetMapping(PSButton.DpadDown, XboxButton.DpadDown);
+                mapper.SetMapping(PSButton.DpadLeft, XboxButton.DpadLeft);
+                mapper.SetMapping(PSButton.DpadRight, XboxButton.DpadRight);
 
-                mapper.SetMapping(DS4Button.Cross, XboxButton.A);
-                mapper.SetMapping(DS4Button.Circle, XboxButton.B);
-                mapper.SetMapping(DS4Button.Square, XboxButton.X);
-                mapper.SetMapping(DS4Button.Triangle, XboxButton.Y);
+                mapper.SetMapping(PSButton.Cross, XboxButton.A);
+                mapper.SetMapping(PSButton.Circle, XboxButton.B);
+                mapper.SetMapping(PSButton.Square, XboxButton.X);
+                mapper.SetMapping(PSButton.Triangle, XboxButton.Y);
 
-                mapper.SetMapping(DS4Button.L1, XboxButton.LeftShoulder);
-                mapper.SetMapping(DS4Button.R1, XboxButton.RightShoulder);
+                mapper.SetMapping(PSButton.L1, XboxButton.LeftShoulder);
+                mapper.SetMapping(PSButton.R1, XboxButton.RightShoulder);
 
-                mapper.SetMapping(DS4Button.L3, XboxButton.LeftStick);
-                mapper.SetMapping(DS4Button.R3, XboxButton.RightStick);
+                mapper.SetMapping(PSButton.L3, XboxButton.LeftStick);
+                mapper.SetMapping(PSButton.R3, XboxButton.RightStick);
 
-                mapper.SetMapping(DS4Button.Share, XboxButton.Back);
-                mapper.SetMapping(DS4Button.Options, XboxButton.Start);
-                mapper.SetMapping(DS4Button.PS, XboxButton.Guide);
+                mapper.SetMapping(PSButton.Share, XboxButton.Back);
+                mapper.SetMapping(PSButton.Options, XboxButton.Start);
+                mapper.SetMapping(PSButton.PS, XboxButton.Guide);
 
                 return mapper;
             }

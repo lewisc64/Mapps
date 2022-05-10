@@ -1,25 +1,25 @@
-﻿namespace Mapps.Gamepads.DualShock4
+﻿namespace Mapps.Gamepads.Styles.PlayStation.DualShock4
 {
     internal class DS4HidInputReport
     {
-        private static readonly Dictionary<DS4Button, byte> MiscButtonMap = new Dictionary<DS4Button, byte>
+        private static readonly Dictionary<PSButton, byte> MiscButtonMap = new Dictionary<PSButton, byte>
         {
-            { DS4Button.L1, 1 },
-            { DS4Button.R1, 2 },
-            { DS4Button.L2, 4 },
-            { DS4Button.R2, 8 },
-            { DS4Button.Share, 16 },
-            { DS4Button.Options, 32 },
-            { DS4Button.L3, 64 },
-            { DS4Button.R3, 128 },
+            { PSButton.L1, 1 },
+            { PSButton.R1, 2 },
+            { PSButton.L2, 4 },
+            { PSButton.R2, 8 },
+            { PSButton.Share, 16 },
+            { PSButton.Options, 32 },
+            { PSButton.L3, 64 },
+            { PSButton.R3, 128 },
         };
 
-        private static readonly Dictionary<DS4Button, byte> FaceButtonMap = new Dictionary<DS4Button, byte>
+        private static readonly Dictionary<PSButton, byte> FaceButtonMap = new Dictionary<PSButton, byte>
         {
-            { DS4Button.Square, 16 },
-            { DS4Button.Cross, 32 },
-            { DS4Button.Circle, 64 },
-            { DS4Button.Triangle, 128 },
+            { PSButton.Square, 16 },
+            { PSButton.Cross, 32 },
+            { PSButton.Circle, 64 },
+            { PSButton.Triangle, 128 },
         };
 
         private readonly byte[] _raw;
@@ -38,7 +38,7 @@
 
         private byte CounterByte => _raw[6 + _offset];
 
-        public IEnumerable<DS4Button> HeldButtons
+        public IEnumerable<PSButton> HeldButtons
         {
             get
             {
@@ -62,32 +62,32 @@
 
                 if (dpadState <= 1 || dpadState == 7)
                 {
-                    yield return DS4Button.DpadUp;
+                    yield return PSButton.DpadUp;
                 }
 
                 if (dpadState >= 1 && dpadState <= 3)
                 {
-                    yield return DS4Button.DpadRight;
+                    yield return PSButton.DpadRight;
                 }
 
                 if (dpadState >= 3 && dpadState <= 5)
                 {
-                    yield return DS4Button.DpadDown;
+                    yield return PSButton.DpadDown;
                 }
 
                 if (dpadState >= 5 && dpadState <= 7)
                 {
-                    yield return DS4Button.DpadLeft;
+                    yield return PSButton.DpadLeft;
                 }
 
                 if ((CounterByte & 0x1) != 0)
                 {
-                    yield return DS4Button.PS;
+                    yield return PSButton.PS;
                 }
 
                 if ((CounterByte & 0x2) != 0)
                 {
-                    yield return DS4Button.TouchPad;
+                    yield return PSButton.TouchPad;
                 }
             }
         }

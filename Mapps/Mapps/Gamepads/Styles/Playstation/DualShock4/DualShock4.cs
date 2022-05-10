@@ -1,9 +1,9 @@
 ﻿using HidSharp;
 using Mapps.Gamepads.Components;
 
-namespace Mapps.Gamepads.DualShock4
+namespace Mapps.Gamepads.Styles.PlayStation.DualShock4
 {
-    public sealed class DualShock4 : HidGamepadBase, IHasButtons<DS4Button>, IHasDualJoysticks, IHasDualTriggers, IHasTwoDistinctMassRumbleMotors, IHasBattery
+    public sealed class DualShock4 : HidGamepadBase, IHasButtons<PSButton>, IHasDualJoysticks, IHasDualTriggers, IHasTwoDistinctMassRumbleMotors, IHasBattery
     {
         private const int VendorId = 0x054C;
 
@@ -33,7 +33,7 @@ namespace Mapps.Gamepads.DualShock4
 
         public Battery Battery { get; } = new Battery();
 
-        public Buttons<DS4Button> Buttons { get; } = new Buttons<DS4Button>();
+        public Buttons<PSButton> Buttons { get; } = new Buttons<PSButton>();
 
         public Joystick LeftJoystick { get; } = new Joystick();
 

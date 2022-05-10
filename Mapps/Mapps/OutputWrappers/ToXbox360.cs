@@ -1,5 +1,5 @@
 ﻿using Mapps.Gamepads;
-using Mapps.Gamepads.XInput;
+using Mapps.Gamepads.Styles.Xbox;
 using Mapps.Mappers;
 using Nefarius.ViGEm.Client;
 using Nefarius.ViGEm.Client.Targets;
@@ -54,7 +54,7 @@ namespace Mapps.OutputWrappers
                     return;
                 }
 
-                if (gamepad is IHasButtons<TButton> buttons)
+                if (_gamepad is IHasButtons<TButton> buttons)
                 {
                     foreach (var button in ButtonMapper.MappedButtons)
                     {
@@ -62,13 +62,13 @@ namespace Mapps.OutputWrappers
                     }
                 }
 
-                if (gamepad is IHasDualTriggers triggers)
+                if (_gamepad is IHasDualTriggers triggers)
                 {
                     _emulatedController.SetSliderValue(Xbox360Slider.LeftTrigger, (byte)(255 * triggers.LeftTrigger.Pressure));
                     _emulatedController.SetSliderValue(Xbox360Slider.RightTrigger, (byte)(255 * triggers.RightTrigger.Pressure));
                 }
 
-                if (gamepad is IHasDualJoysticks joysticks)
+                if (_gamepad is IHasDualJoysticks joysticks)
                 {
                     _emulatedController.SetAxisValue(Xbox360Axis.LeftThumbX, TransformAxis(joysticks.LeftJoystick.X));
                     _emulatedController.SetAxisValue(Xbox360Axis.LeftThumbY, TransformAxis(joysticks.LeftJoystick.Y));
