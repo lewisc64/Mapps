@@ -90,7 +90,7 @@ namespace Mapps.Gamepads.Styles.Xbox.GenericXInput
                 UpdateFromXInputState(state.Gamepad);
 
                 OnStateChanged?.Invoke(this, EventArgs.Empty);
-                _lastPacketNumber++;
+                _lastPacketNumber = state.dwPacketNumber;
             }
         }
 
