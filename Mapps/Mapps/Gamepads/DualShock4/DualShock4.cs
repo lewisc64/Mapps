@@ -3,7 +3,7 @@ using Mapps.Gamepads.Components;
 
 namespace Mapps.Gamepads.DualShock4
 {
-    public class DualShock4 : HidGamepadBase, IHasButtons<DS4Button>, IHasDualJoysticks, IHasDualTriggers, IHasTwoDistinctMassRumbleMotors, IHasBattery
+    public sealed class DualShock4 : HidGamepadBase, IHasButtons<DS4Button>, IHasDualJoysticks, IHasDualTriggers, IHasTwoDistinctMassRumbleMotors, IHasBattery
     {
         private const int VendorId = 0x054C;
 
@@ -120,15 +120,6 @@ namespace Mapps.Gamepads.DualShock4
             _outputReport.UpdateFlash = false;
 
             return bytes;
-        }
-
-        protected override void DisposeComponents()
-        {
-            Buttons.Dispose();
-            LeftJoystick.Dispose();
-            RightJoystick.Dispose();
-            LeftTrigger.Dispose();
-            RightTrigger.Dispose();
         }
 
         private static float ConvertJoystickValue(byte value)

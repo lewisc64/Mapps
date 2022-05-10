@@ -2,8 +2,6 @@
 {
     public class Battery : IGamepadComponent
     {
-        private bool _disposed;
-
         private int _percentage;
 
         private bool _charging;
@@ -58,24 +56,6 @@
                     });
                 }
             }
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!_disposed)
-            {
-                if (disposing)
-                {
-                    // nothing to dispose
-                }
-                _disposed = true;
-            }
-        }
-
-        public void Dispose()
-        {
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
         }
     }
 }

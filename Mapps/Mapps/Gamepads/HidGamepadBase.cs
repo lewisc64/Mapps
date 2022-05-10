@@ -63,8 +63,6 @@ namespace Mapps.Gamepads
 
         protected abstract byte[] GenerateOutputReport();
 
-        protected abstract void DisposeComponents();
-
         private void ManageDevices(CancellationToken cancellationToken)
         {
             try
@@ -153,6 +151,11 @@ namespace Mapps.Gamepads
                     if (report.Length == 0)
                     {
                         continue;
+                    }
+
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        return;
                     }
 
                     ProcessInputReport(report);
@@ -253,8 +256,6 @@ namespace Mapps.Gamepads
                     _hidDevice = null;
                     _hidStream?.Dispose();
                     _hidStream = null;
-
-                    DisposeComponents();
                 }
                 _disposed = true;
             }

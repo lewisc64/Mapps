@@ -1,6 +1,6 @@
 ﻿namespace Mapps.Gamepads.Components
 {
-    public interface IGamepadComponent : IDisposable
+    public interface IGamepadComponent
     {
     }
 }
