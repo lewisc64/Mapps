@@ -3,7 +3,7 @@ using Mapps.Gamepads.Components;
 
 namespace Mapps.Gamepads.Styles.PlayStation.DualShock4
 {
-    public sealed class DualShock4 : HidGamepadBase, IHasButtons<PSButton>, IHasDualJoysticks, IHasDualTriggers, IHasTwoDistinctMassRumbleMotors, IHasBattery
+    public sealed class DualShock4 : HidGamepad, IHasButtons<PSButton>, IHasDualJoysticks, IHasDualTriggers, IHasTwoDistinctMassRumbleMotors, IHasBattery
     {
         private const int VendorId = 0x054C;
 

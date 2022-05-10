@@ -4,7 +4,7 @@ using System.Diagnostics;
 
 namespace Mapps.Gamepads
 {
-    public abstract class HidGamepadBase : IGamepad
+    public abstract class HidGamepad : IGamepad
     {
         private static readonly TimeSpan DeviceCheckInterval = TimeSpan.FromMilliseconds(500);
 
@@ -18,6 +18,12 @@ namespace Mapps.Gamepads
 
         private CancellationTokenSource? _hidCancellationTokenSource = null;
 
+        public event EventHandler? OnConnect;
+
+        public event EventHandler? OnDisconnect;
+
+        public event EventHandler? OnStateChanged;
+
         public bool IsTracking { get; private set; }
 
         public bool IsConnected { get; private set; }
@@ -27,12 +33,6 @@ namespace Mapps.Gamepads
         public HidDevice? ActiveHidDevice => _hidDevice;
 
         protected virtual TimeSpan OutputReportInterval => TimeSpan.Zero;
-
-        public event EventHandler? OnConnect;
-
-        public event EventHandler? OnDisconnect;
-
-        public event EventHandler? OnStateChanged;
 
         public void StartTracking()
         {

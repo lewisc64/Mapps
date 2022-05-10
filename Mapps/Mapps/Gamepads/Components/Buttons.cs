@@ -21,7 +21,10 @@
 
             internal set
             {
-                foreach (var button in _heldButtons.Except(value))
+                var previous = _heldButtons;
+                _heldButtons = value;
+
+                foreach (var button in previous.Except(value))
                 {
                     Task.Run(() =>
                     {
@@ -29,15 +32,13 @@
                     });
                 }
 
-                foreach (var button in value.Except(_heldButtons))
+                foreach (var button in value.Except(previous))
                 {
                     Task.Run(() =>
                     {
                         OnButtonDown?.Invoke(this, button);
                     });
                 }
-
-                _heldButtons = value;
             }
         }
 
