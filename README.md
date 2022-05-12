@@ -1,6 +1,8 @@
 # Mapps
 Controller mapper for the DualShock 4.
 
+![](screenshot.png)
+
 ## Features/Limitations
 
 * Switches between wired connections and bluetooth seamlessly (if both are connected, the wired connection will be preferred due to a faster polling rate).
