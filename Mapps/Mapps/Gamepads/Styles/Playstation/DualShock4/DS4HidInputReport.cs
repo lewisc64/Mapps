@@ -108,6 +108,6 @@
 
         public bool Charging => (_raw[29 + _offset] & 0x10) != 0;
 
-        public int BatteryPercentage => BatteryLevel * 10;
+        public int BatteryPercentage => Math.Min(BatteryLevel * 10 + 5, 100);
     }
 }
