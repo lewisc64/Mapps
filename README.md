@@ -13,6 +13,7 @@ Controller mapper for the DualShock 4.
 
 ## Requirements
 
+* Windows
 * [.NET6.0 runtime](https://dotnet.microsoft.com/en-us/download/dotnet/6.0)
 * [ViGEmBus](https://github.com/ViGEm/ViGEmBus/releases/latest) - Used for emulating an Xbox360 controller
 * An official Sony DualShock 4 controller
