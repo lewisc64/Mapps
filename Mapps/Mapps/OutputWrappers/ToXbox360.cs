@@ -88,6 +88,11 @@ namespace Mapps.OutputWrappers
         {
             ThrowIfDisposed();
 
+            if (IsConnected)
+            {
+                throw new InvalidOperationException("Already connected.");
+            }
+
             _emulatedController = _client.CreateXbox360Controller();
             _emulatedController.Connect();
 
@@ -146,14 +151,6 @@ namespace Mapps.OutputWrappers
             if (_disposed)
             {
                 throw new ObjectDisposedException(nameof(ToXbox360<TButton>));
-            }
-        }
-
-        private void ThrowIfNotConnected()
-        {
-            if (!IsConnected)
-            {
-                throw new InvalidOperationException("Emulated controller is not connected.");
             }
         }
     }
