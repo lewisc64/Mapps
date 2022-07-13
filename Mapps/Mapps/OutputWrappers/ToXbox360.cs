@@ -10,7 +10,7 @@ namespace Mapps.OutputWrappers
     public class ToXbox360<TButton> : IGamepadOutputWrapper, IDisposable
         where TButton : notnull
     {
-        private readonly Dictionary<XboxButton, Xbox360Button> ViGEmButtonMap = new()
+        private static readonly Dictionary<XboxButton, Xbox360Button> ViGEmButtonMap = new()
         {
             { XboxButton.A, Xbox360Button.A },
             { XboxButton.B, Xbox360Button.B },

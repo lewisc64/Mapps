@@ -1,5 +1,6 @@
 ﻿using HidSharp;
 using Mapps.Gamepads.Components;
+using System.Diagnostics;
 
 namespace Mapps.Gamepads.Styles.PlayStation.DualShock4
 {
@@ -9,11 +10,15 @@ namespace Mapps.Gamepads.Styles.PlayStation.DualShock4
 
         private static readonly int[] ProductIds = new[] { 0x05C4, 0x09CC };
 
+        private static readonly TimeSpan LightBarForceUpdateInterval = TimeSpan.FromSeconds(1);
+
         private const int SerialNumberFeatureId = 18;
 
         private const int UsbInputReportLength = 64;
 
         private readonly DS4HidOutputReport _outputReport = new DS4HidOutputReport();
+
+        private readonly Stopwatch _forceLightbarUpdateTimer = Stopwatch.StartNew();
 
         public DualShock4(string serialNumber)
         {
@@ -105,12 +110,16 @@ namespace Mapps.Gamepads.Styles.PlayStation.DualShock4
                 _outputReport.UpdateRumble = true;
             }
 
-            if (_outputReport.LightBarRed != LightBar.Red || _outputReport.LightBarGreen != LightBar.Green || _outputReport.LightBarBlue != LightBar.Blue)
+            if (_forceLightbarUpdateTimer.Elapsed > LightBarForceUpdateInterval
+                || _outputReport.LightBarRed != LightBar.Red
+                || _outputReport.LightBarGreen != LightBar.Green
+                || _outputReport.LightBarBlue != LightBar.Blue)
             {
                 _outputReport.LightBarRed = LightBar.Red;
                 _outputReport.LightBarGreen = LightBar.Green;
                 _outputReport.LightBarBlue = LightBar.Blue;
                 _outputReport.UpdateLightBar = true;
+                _forceLightbarUpdateTimer.Restart();
             }
 
             var bytes = IsBluetooth ? _outputReport.AsBytesBluetooth(OutputReportInterval.Milliseconds) : _outputReport.AsBytesUSB();

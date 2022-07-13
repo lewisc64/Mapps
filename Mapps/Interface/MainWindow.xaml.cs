@@ -4,6 +4,7 @@ using Mapps.Mappers;
 using Mapps.OutputWrappers;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -18,6 +19,8 @@ namespace Interface
     /// </summary>
     public partial class MainWindow : Window
     {
+        private (byte Red, byte Green, byte Blue) DesiredColor = (0, 128, 64);
+
         private DualShock4? _gamepad = null;
 
         private ToXbox360<PSButton>? _outputWrapper = null;
@@ -72,21 +75,6 @@ namespace Interface
             _gamepad.OnStateChanged += (a, b) =>
             {
                 Dispatcher.Invoke(UpdateControllerInformation);
-                Dispatcher.Invoke(() =>
-                {
-                    try
-                    {
-                        lightBar.Fill = new SolidColorBrush(Color.FromRgb(_gamepad.LightBar.Red, _gamepad.LightBar.Green, _gamepad.LightBar.Blue));
-                    }
-                    catch (NullReferenceException)
-                    {
-                        // ignore
-                    }
-                    catch (ObjectDisposedException)
-                    {
-                        // ignore
-                    }
-                });
             };
 
             _gamepad.Buttons.OnButtonDown += (_, button) =>
@@ -122,6 +110,61 @@ namespace Interface
                     ShowTriggerPressure(labelR2, pressure);
                 });
             };
+
+            Task.Run(async () =>
+            {
+                var lowBatteryFlashTimer = Stopwatch.StartNew();
+
+                while (true)
+                {
+                    try
+                    {
+                        if (_gamepad is null || !_gamepad.IsConnected)
+                        {
+                            await Task.Delay(100);
+                            continue;
+                        }
+
+                        if (!_gamepad.Battery.IsCharging && _gamepad.Battery.Percentage <= 20)
+                        {
+                            if (lowBatteryFlashTimer.ElapsedMilliseconds >= 200)
+                            {
+                                if (_gamepad.LightBar.Red == 0 && _gamepad.LightBar.Green == 0 && _gamepad.LightBar.Blue == 0)
+                                {
+                                    _gamepad.LightBar.Red = DesiredColor.Red;
+                                    _gamepad.LightBar.Green = DesiredColor.Green;
+                                    _gamepad.LightBar.Blue = DesiredColor.Blue;
+                                }
+                                else
+                                {
+                                    _gamepad.LightBar.Red = 0;
+                                    _gamepad.LightBar.Green = 0;
+                                    _gamepad.LightBar.Blue = 0;
+                                }
+                                lowBatteryFlashTimer.Restart();
+                            }
+                        }
+                        else
+                        {
+                            _gamepad.LightBar.Red = DesiredColor.Red;
+                            _gamepad.LightBar.Green = DesiredColor.Green;
+                            _gamepad.LightBar.Blue = DesiredColor.Blue;
+                        }
+
+                        Dispatcher.Invoke(() =>
+                        {
+                            lightBar.Fill = new SolidColorBrush(Color.FromRgb(_gamepad.LightBar.Red, _gamepad.LightBar.Green, _gamepad.LightBar.Blue));
+                        });
+
+                        await Task.Delay(10);
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.WriteLine($"Exception in lightbar task: {e}");
+                        await Task.Delay(1000);
+                    }
+                }
+            });
 
             _gamepad.StartTracking();
             _outputWrapper.Connect();
@@ -232,13 +275,13 @@ namespace Interface
                 return;
             }
 
-            var dialog = new ColorPicker(_gamepad.LightBar.Red, _gamepad.LightBar.Green, _gamepad.LightBar.Blue);
+            var dialog = new ColorPicker(DesiredColor.Red, DesiredColor.Green, DesiredColor.Blue);
 
             dialog.OnColorChanged += (a, b) =>
             {
-                _gamepad.LightBar.Red = dialog.Red;
-                _gamepad.LightBar.Green = dialog.Green;
-                _gamepad.LightBar.Blue = dialog.Blue;
+                DesiredColor.Red = dialog.Red;
+                DesiredColor.Green = dialog.Green;
+                DesiredColor.Blue = dialog.Blue;
             };
 
             dialog.ShowDialog();
