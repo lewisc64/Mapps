@@ -1,8 +1,9 @@
 ﻿namespace Mapps.Gamepads.Events;
 
-public class GamepadButtonEventArgs<TButton> : IGamepadEventArgs
+public class ButtonEventArgs<TButton> : IGamepadEventArgs
+    where TButton : notnull
 {
-    public GamepadButtonEventArgs(TButton button, bool isPressed)
+    public ButtonEventArgs(TButton button, bool isPressed)
     {
         Button = button;
         IsPressed = isPressed;

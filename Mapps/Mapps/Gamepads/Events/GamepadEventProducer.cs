@@ -1,17 +1,10 @@
 ﻿using Mapps.Gamepads.Components;
+using Mapps.Gamepads.Input;
 
 namespace Mapps.Gamepads.Events;
 
-public interface IGamepadEventProducer<TButton> : IDisposable
-{
-    event EventHandler<IGamepadEventArgs>? EventDispatch;
-
-    void Register(IGamepad gamepad);
-
-    void Deregister();
-}
-
-public class GamepadEventProducer<TButton> : IGamepadEventProducer<TButton>
+public class GamepadEventProducer<TButton> : IGamepadEventSource
+    where TButton : notnull
 {
     private bool _disposed;
     private List<Action> ListenerDestroyers = new();
@@ -22,7 +15,7 @@ public class GamepadEventProducer<TButton> : IGamepadEventProducer<TButton>
     {
     }
 
-    public void Register(IGamepad gamepad)
+    public void Register(IInputGamepad gamepad)
     {
         DestroyListeners();
         CreateListeners(gamepad);
@@ -34,25 +27,25 @@ public class GamepadEventProducer<TButton> : IGamepadEventProducer<TButton>
         DestroyListeners();
     }
 
-    private void CreateListeners(IGamepad gamepad)
+    private void CreateListeners(IInputGamepad gamepad)
     {
         CreateButtonListeners(gamepad);
         CreateJoystickListeners(gamepad);
         CreateTriggerListeners(gamepad);
     }
 
-    private void CreateButtonListeners(IGamepad gamepad)
+    private void CreateButtonListeners(IInputGamepad gamepad)
     {
         if (gamepad is IHasButtons<TButton> gamepadWithButtons)
         {
             EventHandler<TButton> buttonDownListener = (_, button) =>
             {
-                EventDispatch?.Invoke(this, new GamepadButtonEventArgs<TButton>(button, true));
+                EventDispatch?.Invoke(this, new ButtonEventArgs<TButton>(button, true));
             };
 
             EventHandler<TButton> buttonUpListener = (_, button) =>
             {
-                EventDispatch?.Invoke(this, new GamepadButtonEventArgs<TButton>(button, false));
+                EventDispatch?.Invoke(this, new ButtonEventArgs<TButton>(button, false));
             };
 
             gamepadWithButtons.Buttons.OnButtonDown += buttonDownListener;
@@ -63,23 +56,23 @@ public class GamepadEventProducer<TButton> : IGamepadEventProducer<TButton>
         }
     }
 
-    private void CreateJoystickListeners(IGamepad gamepad)
+    private void CreateJoystickListeners(IInputGamepad gamepad)
     {
         if (gamepad is IHasDualJoysticks gamepadWithJoysticks)
         {
-            CreateListenersForJoystick(gamepad, gamepadWithJoysticks.LeftJoystick, GamepadEventJoystickPosition.Left);
-            CreateListenersForJoystick(gamepad, gamepadWithJoysticks.RightJoystick, GamepadEventJoystickPosition.Right);
+            CreateListenersForJoystick(gamepad, gamepadWithJoysticks.LeftJoystick, JoystickPosition.Left);
+            CreateListenersForJoystick(gamepad, gamepadWithJoysticks.RightJoystick, JoystickPosition.Right);
         }
     }
 
-    private void CreateListenersForJoystick(IGamepad gamepad, Joystick joystick, GamepadEventJoystickPosition position)
+    private void CreateListenersForJoystick(IInputGamepad gamepad, Joystick joystick, JoystickPosition position)
     {
-        GamepadJoystickEventArgs? previousEvent = null;
+        JoystickEventArgs? previousEvent = null;
         EventHandler handler = (a, b) =>
         {
             if (previousEvent is null || previousEvent.X != joystick.X || previousEvent.Y != joystick.Y)
             {
-                var currentEvent = new GamepadJoystickEventArgs(joystick.X, joystick.Y, position);
+                var currentEvent = new JoystickEventArgs(joystick.X, joystick.Y, position);
                 EventDispatch?.Invoke(this, currentEvent);
                 previousEvent = currentEvent;
             }
@@ -89,20 +82,20 @@ public class GamepadEventProducer<TButton> : IGamepadEventProducer<TButton>
         ListenerDestroyers.Add(() => gamepad.OnStateChanged -= handler);
     }
 
-    private void CreateTriggerListeners(IGamepad gamepad)
+    private void CreateTriggerListeners(IInputGamepad gamepad)
     {
         if (gamepad is IHasDualTriggers gamepadWithTriggers)
         {
-            CreateListenersForTrigger(gamepad, gamepadWithTriggers.LeftTrigger, GamepadEventTriggerPosition.Left);
-            CreateListenersForTrigger(gamepad, gamepadWithTriggers.RightTrigger, GamepadEventTriggerPosition.Right);
+            CreateListenersForTrigger(gamepad, gamepadWithTriggers.LeftTrigger, TriggerPosition.Left);
+            CreateListenersForTrigger(gamepad, gamepadWithTriggers.RightTrigger, TriggerPosition.Right);
         }
     }
 
-    private void CreateListenersForTrigger(IGamepad gamepad, Trigger trigger, GamepadEventTriggerPosition position)
+    private void CreateListenersForTrigger(IInputGamepad gamepad, Trigger trigger, TriggerPosition position)
     {
         EventHandler<float> handler = (_, value) =>
         {
-            EventDispatch?.Invoke(this, new GamepadTriggerEventArgs(value, position));
+            EventDispatch?.Invoke(this, new TriggerEventArgs(value, position));
         };
 
         trigger.OnChange += handler;

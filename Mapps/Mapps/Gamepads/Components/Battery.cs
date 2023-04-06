@@ -1,60 +1,56 @@
-﻿namespace Mapps.Gamepads.Components
+﻿namespace Mapps.Gamepads.Components;
+
+public class Battery : IGamepadComponent
 {
-    public class Battery : IGamepadComponent
+    private int _percentage;
+    private bool _charging;
+
+    public event EventHandler<int>? OnLevelChanged;
+    public event EventHandler? OnCharging;
+    public event EventHandler? OnDischarging;
+
+    public Battery()
     {
-        private int _percentage;
+    }
 
-        private bool _charging;
-
-        public Battery()
+    public int Percentage
+    {
+        get
         {
+            return _percentage;
         }
 
-        public event EventHandler<int>? OnLevelChanged;
-
-        public event EventHandler? OnCharging;
-
-        public event EventHandler? OnDischarging;
-
-        public int Percentage
+        set
         {
-            get
+            var previous = _percentage;
+            _percentage = Math.Max(Math.Min(value, 100), 0);
+            if (previous != _percentage)
             {
-                return _percentage;
-            }
-
-            set
-            {
-                var previous = _percentage;
-                _percentage = Math.Max(Math.Min(value, 100), 0);
-                if (previous != _percentage)
+                Task.Run(() =>
                 {
-                    Task.Run(() =>
-                    {
-                        OnLevelChanged?.Invoke(this, _percentage);
-                    });
-                }
+                    OnLevelChanged?.Invoke(this, _percentage);
+                });
             }
         }
+    }
 
-        public bool IsCharging
+    public bool IsCharging
+    {
+        get
         {
-            get
-            {
-                return _charging;
-            }
+            return _charging;
+        }
 
-            set
+        set
+        {
+            var previous = _charging;
+            _charging = value;
+            if (previous != _charging)
             {
-                var previous = _charging;
-                _charging = value;
-                if (previous != _charging)
+                Task.Run(() =>
                 {
-                    Task.Run(() =>
-                    {
-                        (_charging ? OnCharging : OnDischarging)?.Invoke(this, EventArgs.Empty);
-                    });
-                }
+                    (_charging ? OnCharging : OnDischarging)?.Invoke(this, EventArgs.Empty);
+                });
             }
         }
     }

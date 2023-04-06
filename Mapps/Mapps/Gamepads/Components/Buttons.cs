@@ -1,50 +1,49 @@
-﻿namespace Mapps.Gamepads.Components
+﻿namespace Mapps.Gamepads.Components;
+
+public class Buttons<T> : IGamepadComponent
+    where T : notnull
 {
-    public class Buttons<T> : IGamepadComponent
+    private IEnumerable<T> _heldButtons = new List<T>();
+
+    public event EventHandler<T>? OnButtonDown;
+    public event EventHandler<T>? OnButtonUp;
+
+    public Buttons()
     {
-        private IEnumerable<T> _heldButtons = new List<T>();
+    }
 
-        public Buttons()
+    public IEnumerable<T> HeldButtons
+    {
+        get
         {
+            return _heldButtons;
         }
 
-        public event EventHandler<T>? OnButtonDown;
-
-        public event EventHandler<T>? OnButtonUp;
-
-        public IEnumerable<T> HeldButtons
+        internal set
         {
-            get
+            var previous = _heldButtons;
+            _heldButtons = value;
+
+            foreach (var button in previous.Except(value))
             {
-                return _heldButtons;
+                Task.Run(() =>
+                {
+                    OnButtonUp?.Invoke(this, button);
+                });
             }
 
-            internal set
+            foreach (var button in value.Except(previous))
             {
-                var previous = _heldButtons;
-                _heldButtons = value;
-
-                foreach (var button in previous.Except(value))
+                Task.Run(() =>
                 {
-                    Task.Run(() =>
-                    {
-                        OnButtonUp?.Invoke(this, button);
-                    });
-                }
-
-                foreach (var button in value.Except(previous))
-                {
-                    Task.Run(() =>
-                    {
-                        OnButtonDown?.Invoke(this, button);
-                    });
-                }
+                    OnButtonDown?.Invoke(this, button);
+                });
             }
         }
+    }
 
-        public bool IsPressed(T button)
-        {
-            return HeldButtons.Contains(button);
-        }
+    public bool IsPressed(T button)
+    {
+        return HeldButtons.Contains(button);
     }
 }

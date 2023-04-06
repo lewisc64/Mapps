@@ -1,8 +1,8 @@
 ﻿using Mapps.Gamepads.Events;
-using Mapps.Gamepads.OutputWrappers;
-using Mapps.Gamepads.Styles.PlayStation;
-using Mapps.Gamepads.Styles.PlayStation.DualShock4;
-using Mapps.Gamepads.Styles.Xbox;
+using Mapps.Gamepads.Input.Playstation;
+using Mapps.Gamepads.Input.Playstation.DualShock4;
+using Mapps.Gamepads.Input.Xbox;
+using Mapps.Gamepads.Output;
 using Mapps.Mappers;
 using System;
 using System.Collections.Generic;
@@ -31,10 +31,10 @@ public partial class MainWindow : Window
 {
     private ControlState _currentState = ControlState.Normal;
     private SemaphoreSlim _gamepadSemaphore = new SemaphoreSlim(1);
-    private IGamepadEventProducer<PSButton> _gamepadEventProducer;
-    private GamepadEventRecorder<PSButton> _gamepadEventRecorder;
+    private GamepadEventProducer<PSButton> _gamepadEventProducer;
+    private GamepadEventRecorder _gamepadEventRecorder;
     private ButtonMapper<PSButton, XboxButton> _buttonMapper;
-    private IGamepadOutputWrapper<PSButton> _outputWrapper;
+    private IOutputGamepad<XboxButton> _outputGamepad;
 
     private DualShock4? _gamepad = null;
     private CancellationTokenSource? _playbackCancellationTokenSource = null;
@@ -45,14 +45,14 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         _gamepadEventProducer = new GamepadEventProducer<PSButton>();
-        _gamepadEventRecorder = new GamepadEventRecorder<PSButton>(_gamepadEventProducer);
+        _gamepadEventRecorder = new GamepadEventRecorder(_gamepadEventProducer);
 
         _buttonMapper = DefaultMappers.DualShock4ToXboxButtonMapper;
         _buttonMapper.RemoveMapping(PSButton.PS);
 
-        _outputWrapper = new ToXbox360<PSButton>(_buttonMapper);
-        _outputWrapper.SetEventSource(_gamepadEventProducer);
-        _outputWrapper.Connect();
+        _outputGamepad = new Xbox360OutputGamepad();
+        _outputGamepad.SetEventSource(_gamepadEventProducer, _buttonMapper);
+        _outputGamepad.Connect();
 
         InitializeComponent();
 
@@ -99,7 +99,7 @@ public partial class MainWindow : Window
             _gamepad = new DualShock4((string)comboSerialNumbers.SelectedItem);
 
             _gamepadEventProducer.Register(_gamepad);
-            _outputWrapper.SetFeedbackGamepad(_gamepad);
+            _outputGamepad.SetFeedbackGamepad(_gamepad);
 
             labelSmallInfo.Content = $"Serial number: {_gamepad.SerialNumber}";
 
@@ -129,7 +129,7 @@ public partial class MainWindow : Window
                     else if (_currentState == ControlState.Recording)
                     {
                         _gamepadEventRecorder.StopRecording();
-                        _outputWrapper.SetEventSource(_gamepadEventRecorder);
+                        _outputGamepad.SetEventSource(_gamepadEventRecorder, _buttonMapper);
                         _playbackCancellationTokenSource = new();
 
                         Task.Run(async () =>
@@ -145,7 +145,7 @@ public partial class MainWindow : Window
                     else
                     {
                         _playbackCancellationTokenSource!.Cancel();
-                        _outputWrapper.SetEventSource(_gamepadEventProducer);
+                        _outputGamepad.SetEventSource(_gamepadEventProducer, _buttonMapper);
                         _currentState = ControlState.Normal;
                     }
                 }
@@ -259,7 +259,7 @@ public partial class MainWindow : Window
 
     private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
     {
-        _outputWrapper?.Dispose();
+        _outputGamepad?.Dispose();
         _gamepad?.Dispose();
     }
 
@@ -313,8 +313,7 @@ public partial class MainWindow : Window
         }
         try
         {
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
-            labelSmallInfo.Content = $"Serial number: {_gamepad.SerialNumber}, Avg. polling rate: {Math.Round(_gamepad?.MeasuredPollingRate.Average ?? 0, 3)}ms";
+            labelSmallInfo.Content = $"Serial number: {_gamepad.SerialNumber}, Avg. polling rate: {Math.Round(_gamepad!.MeasuredPollingRate.Average, 3)}ms";
             if (_gamepad.IsConnected)
             {
                 labelConnection.Content = $"Connection: {(_gamepad.IsBluetooth ? "Bluetooth" : "USB")}";
@@ -326,7 +325,6 @@ public partial class MainWindow : Window
             labelBattery.Content = $"Battery: {_gamepad.Battery.Percentage}% {(_gamepad.Battery.IsCharging ? "(charging)" : string.Empty)}";
             HandleStick(labelL3, leftStickPosition, _gamepad.LeftJoystick.X, _gamepad.LeftJoystick.Y);
             HandleStick(labelR3, rightStickPosition, _gamepad.RightJoystick.X, _gamepad.RightJoystick.Y);
-#pragma warning restore CS8602
         }
         catch (ObjectDisposedException)
         {

@@ -1,18 +1,18 @@
 ﻿namespace Mapps.Gamepads.Events;
 
-public class GamepadEventRecorder<TButton> : IGamepadEventProducer<TButton>
+public class GamepadEventRecorder : IGamepadEventSource
 {
     private bool _disposed;
-    private IGamepadEventProducer<TButton> _eventProducer;
+    private IGamepadEventSource _eventSource;
     private EventHandler<IGamepadEventArgs>? _eventHandler;
     private List<(IGamepadEventArgs? Event, TimeSpan Stamp)> _recording = new();
     private DateTime? _recordingStartStamp;
 
     public event EventHandler<IGamepadEventArgs>? EventDispatch;
 
-    public GamepadEventRecorder(IGamepadEventProducer<TButton> eventProducer)
+    public GamepadEventRecorder(IGamepadEventSource eventSource)
     {
-        _eventProducer = eventProducer;
+        _eventSource = eventSource;
     }
 
     public bool Recording { get; private set; } = false;
@@ -33,20 +33,20 @@ public class GamepadEventRecorder<TButton> : IGamepadEventProducer<TButton>
             _recording.Add((gamepadEvent, DateTime.UtcNow - _recordingStartStamp.Value));
         };
 
-        _eventProducer.EventDispatch += _eventHandler;
+        _eventSource.EventDispatch += _eventHandler;
     }
 
     public void StopRecording()
     {
         if (!Recording)
         {
-            throw new InvalidOperationException("Not current recording.");
+            throw new InvalidOperationException("Not currently recording.");
         }
 
         _recording.Add((null, DateTime.UtcNow - _recordingStartStamp!.Value));
 
         Recording = false;
-        _eventProducer.EventDispatch -= _eventHandler;
+        _eventSource.EventDispatch -= _eventHandler;
         _eventHandler = null;
     }
 
@@ -57,7 +57,7 @@ public class GamepadEventRecorder<TButton> : IGamepadEventProducer<TButton>
         foreach (var nextEvent in _recording)
         {
             var waitUntil = startPlayingStamp + nextEvent.Stamp;
-            if (waitUntil - DateTime.UtcNow > TimeSpan.FromMilliseconds(1000))
+            while (waitUntil - DateTime.UtcNow > TimeSpan.FromMilliseconds(1000) && !cancellationToken.IsCancellationRequested)
             {
                 try
                 {
@@ -85,21 +85,11 @@ public class GamepadEventRecorder<TButton> : IGamepadEventProducer<TButton>
         }
     }
 
-    public void Register(IGamepad gamepad)
-    {
-        throw new NotSupportedException();
-    }
-
-    public void Deregister()
-    {
-        throw new NotSupportedException();
-    }
-
     private void ThrowIfDisposed()
     {
         if (_disposed)
         {
-            throw new ObjectDisposedException(nameof(GamepadEventRecorder<TButton>));
+            throw new ObjectDisposedException(nameof(GamepadEventRecorder));
         }
     }
 
