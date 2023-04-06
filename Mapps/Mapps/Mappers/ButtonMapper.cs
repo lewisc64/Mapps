@@ -29,6 +29,11 @@
             _mapping.Remove(button);
         }
 
+        public bool HasMapping(TInput button)
+        {
+            return _mapping.ContainsKey(button);
+        }
+
         public TOutput Map(TInput button)
         {
             return _mapping[button];

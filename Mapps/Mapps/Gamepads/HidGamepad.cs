@@ -18,6 +18,10 @@ namespace Mapps.Gamepads
 
         private CancellationTokenSource? _hidCancellationTokenSource = null;
 
+        private Thread? _recieveReportsThread;
+
+        private Thread? _sendReportsThread;
+
         public event EventHandler? OnConnect;
 
         public event EventHandler? OnDisconnect;
@@ -117,10 +121,13 @@ namespace Mapps.Gamepads
             _hidStream = _hidDevice.Open();
 
             _hidCancellationTokenSource = new CancellationTokenSource();
-            new Thread(() => { RecieveHidReports(_hidCancellationTokenSource.Token); }).Start();
+            _recieveReportsThread = new Thread(() => { RecieveHidReports(_hidCancellationTokenSource.Token); });
+            _sendReportsThread = new Thread(() => { SendHidReports(_hidCancellationTokenSource.Token); });
+
+            _recieveReportsThread.Start();
             if (_hidDevice.GetMaxOutputReportLength() > 0)
             {
-                new Thread(() => { SendHidReports(_hidCancellationTokenSource.Token); }).Start();
+                _sendReportsThread.Start();
             }
         }
 
@@ -129,6 +136,19 @@ namespace Mapps.Gamepads
             ThrowIfDisposed();
 
             _hidCancellationTokenSource?.Cancel();
+
+            if (_recieveReportsThread != null && !_recieveReportsThread.Join(2000))
+            {
+                throw new TimeoutException("Timed out waiting for the report recieving thread to stop.");
+            }
+            _recieveReportsThread = null;
+
+            if (_sendReportsThread != null && !_sendReportsThread.Join(2000))
+            {
+                throw new TimeoutException("Timed out waiting for the report sending thread to stop.");
+            }
+            _sendReportsThread = null;
+
             _hidCancellationTokenSource?.Dispose();
             _hidCancellationTokenSource = null;
 
@@ -167,40 +187,31 @@ namespace Mapps.Gamepads
             }
             catch (IOException)
             {
-                DisconnectDevice();
-            }
-            catch (ObjectDisposedException)
-            {
-                // ignore
+                if (!cancellationToken.IsCancellationRequested)
+                {
+                    // device was likely unplugged, disconnect
+                    Task.Run(() =>
+                    {
+                        DisconnectDevice();
+                    });
+                }
             }
         }
 
         private void SendHidReports(CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
-
-            try
+            while (!cancellationToken.IsCancellationRequested && _hidDevice != null)
             {
-                while (!cancellationToken.IsCancellationRequested && _hidDevice != null)
+                var report = GenerateOutputReport();
+                if (report.Length > 0)
                 {
-                    var report = GenerateOutputReport();
-                    if (report.Length > 0)
-                    {
-                        SendReport(report);
-                    }
-                    if (OutputReportInterval.TotalMilliseconds > 0)
-                    {
-                        Thread.Sleep(OutputReportInterval);
-                    }
+                    SendReport(report);
                 }
-            }
-            catch (IOException)
-            {
-                // ignore
-            }
-            catch (ObjectDisposedException)
-            {
-                // ignore
+                if (OutputReportInterval.TotalMilliseconds > 0)
+                {
+                    Thread.Sleep(OutputReportInterval);
+                }
             }
         }
 
@@ -218,9 +229,13 @@ namespace Mapps.Gamepads
                     return buffer;
                 }
             }
+            catch (ObjectDisposedException)
+            {
+                // ignore
+            }
             catch (TimeoutException)
             {
-                // ignore, try again next loop.
+                // ignore
             }
             return new byte[0];
         }
@@ -230,6 +245,15 @@ namespace Mapps.Gamepads
             try
             {
                 _hidStream?.Write(data, 0, data.Length);
+            }
+            catch (IOException)
+            {
+                // HidSharp is screaming for no reason
+                // The feature number is correct. I promise.
+            }
+            catch (ObjectDisposedException)
+            {
+                // ignore
             }
             catch (TimeoutException)
             {
